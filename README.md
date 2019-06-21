@@ -129,7 +129,7 @@ The static webpage is served on:
 While the sole template endpoint is served on:
 
     http://localhost:10050/templateendpoint
-    
+
 # Extending the template
 
 You should extend this template as follows:
@@ -138,6 +138,6 @@ You should extend this template as follows:
 * Add your own flow definitions under `workflows/src/main/kotlin/`
 * Extend or replace the client and webserver under `clients/src/main/kotlin/`
 
-For a guided example of how to extend this template, see the Hello, World! tutorial 
+For a guided example of how to extend this template, see the Hello, World! tutorial
 [here](https://docs.corda.net/hello-world-introduction.html).
 # tictactoe
