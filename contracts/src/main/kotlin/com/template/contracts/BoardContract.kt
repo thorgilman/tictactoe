@@ -18,39 +18,73 @@ class BoardContract : Contract {
         val command = tx.commands.requireSingleCommand<BoardContract.Commands>()
 
         when(command.value) {
-            is Commands.Place -> requireThat{
+
+            is Commands.StartGame -> requireThat{
+                "There should be no input state." using (tx.inputs.isEmpty())
+                "There should be one output state." using (tx.outputs.size == 1)
+                "The output state should be of type BoardState." using (tx.outputs[0].data is BoardState)
+
+                val outputBoardState = tx.outputStates[0] as BoardState
+                "You cannot play a game with yourself." using (outputBoardState.playerO != outputBoardState.playerX)
+
+                "Both parties together only may sign a StartGame transaction." using (command.signers == outputBoardState.participants.map { it.owningKey })
+                // TODO
+            }
+
+            is Commands.MakeMove -> requireThat{
                 "There should be one input state." using (tx.inputs.size == 1)
                 "There should be one output state." using (tx.outputs.size == 1)
-                "The input state should be of type BoardState." using (tx.inputs.get(0).state.data is BoardState)
-                "The output state should be of type BoardState." using (tx.outputs.get(0).data is BoardState)
+                "The input state should be of type BoardState." using (tx.inputStates.single() is BoardState)
+                "The output state should be of type BoardState." using (tx.outputStates.single() is BoardState)
 
-                val inputBoardState = tx.inputStates.get(0) as BoardState
-                val outputBoardState = tx.inputStates.get(0) as BoardState
+                val inputBoardState = tx.inputStates.single() as BoardState
+                val outputBoardState = tx.outputStates.single() as BoardState
 
-                "It cannot be the same players turn both in the input board and the output board" using (inputBoardState.isPlayerXTurn != outputBoardState.isPlayerXTurn)
+                "It cannot be the same players turn both in the input board and the output board." using (inputBoardState.isPlayerXTurn xor outputBoardState.isPlayerXTurn)
 
                 val playerChar = if (inputBoardState.isPlayerXTurn) 'X' else 'O'
+
+                println("\n\n\n----------")
+                inputBoardState.printBoard()
+                outputBoardState.printBoard()
+                println("----------\n\n\n")
+
                 "Not valid board update." using checkIfValidBoardUpdate(inputBoardState.board, outputBoardState.board, playerChar)
 
-
             }
+
+            is Commands.EndGame -> requireThat{
+                "There should be one input state." using (tx.inputs.size == 1)
+                "There should be no output state." using (tx.outputs.isEmpty())
+                "The input state should be of type BoardState." using (tx.inputs[0].state.data is BoardState)
+
+                val inputBoardState = tx.inputStates.single() as BoardState
+                "The game must be over." using (inputBoardState.isGameOver())
+
+
+                // TODO
+            }
+
         }
 
     }
 
 
     fun checkIfValidBoardUpdate(inputBoard: Array<CharArray>, outputBoard: Array<CharArray>, playerChar: Char): Boolean {
+
+//        inputBoard.forEach { it.forEach { print(it) } }
+//        println()
+//        outputBoard.forEach { it.forEach { print(it) } }
+
         var numUpdates = 0
         for (x in (0..2)) {
             for (y in (0..2)) {
 
-                val inputVal = inputBoard[x][y]
-                val outputVal = outputBoard[x][y]
+                val inputVal = inputBoard[y][x]
+                val outputVal = outputBoard[y][x]
 
                 if (inputVal == 'E') { // Space on board was empty
-
                     if (outputVal != 'E') { // Space on board isn't empty anymore
-
                         if (outputVal != playerChar) return false // Board was updated with the wrong players char
                         numUpdates++
                     }
@@ -61,18 +95,18 @@ class BoardContract : Contract {
             }
         }
 
-        if (numUpdates != 1) return false // Board should only be updated in one place
+        if (numUpdates != 1) {
+            println("MORE THAN ONE UPDATE!!!!!!" + numUpdates)
+            return false // Board should only be updated in one place
+        }
         return true
     }
 
 
-
     interface Commands : CommandData {
-        class Place : Commands
+        class StartGame : Commands
+        class MakeMove : Commands
+        class EndGame : Commands
     }
-
-
-
-
 
 }
