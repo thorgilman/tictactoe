@@ -25,6 +25,8 @@ class EndGameFlow(val linearId: UniqueIdentifier) : FlowLogic<SignedTransaction>
     @Suspendable
     override fun call(): SignedTransaction {
 
+        println("GAME OVER")
+
         val notary = serviceHub.networkMapCache.notaryIdentities.single()
 
         val queryCriteria = QueryCriteria.LinearStateQueryCriteria(linearId = listOf(linearId))

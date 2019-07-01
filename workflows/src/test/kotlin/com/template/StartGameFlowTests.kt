@@ -1,9 +1,11 @@
 package com.template
 
+import com.template.contracts.BoardContract
 import com.template.flows.Responder
 import com.template.flows.StartGameFlow
 import com.template.states.BoardState
 import net.corda.core.identity.CordaX500Name
+import net.corda.core.identity.Party
 import net.corda.core.transactions.SignedTransaction
 import net.corda.core.utilities.getOrThrow
 import net.corda.testing.core.TestIdentity
@@ -24,31 +26,42 @@ class StartGameFlowTests {
         TestCordapp.findCordapp("com.template.flows")
     )))
 
-    private val nodeA = mockNetwork.createNode()
-    private val nodeB = mockNetwork.createNode()
-    init {
+    private lateinit var nodeA: StartedMockNode
+    private lateinit var nodeB: StartedMockNode
+    private lateinit var partyA: Party
+    private lateinit var partyB: Party
+
+    @Before
+    fun setup() {
+        nodeA = mockNetwork.createNode()
+        nodeB = mockNetwork.createNode()
+        partyA = nodeA.info.chooseIdentityAndCert().party
+        partyB = nodeB.info.chooseIdentityAndCert().party
         listOf(nodeA, nodeB).forEach {
             it.registerInitiatedFlow(Responder::class.java)
         }
     }
 
-//    val partyA = TestIdentity(CordaX500Name("PartyA","London","GB")).party
-//    val partyB = TestIdentity(CordaX500Name("PartyB","New York","US")).party
-
-    @Before
-    fun setup() = mockNetwork.runNetwork()
-
     @After
     fun tearDown() = mockNetwork.stopNodes()
 
     @Test
-    fun flowReturnsTransactionSignedByBothParties() {
-        val partyA = nodeA.info.chooseIdentityAndCert().party
-        val partyB = nodeB.info.chooseIdentityAndCert().party
-        //val boardState = BoardState(partyA, partyB)
+    fun flowReturnsCorrectlyFormedTransaction() {
+        val future = nodeA.startFlow(StartGameFlow(partyB))
+        mockNetwork.runNetwork()
+        val ptx: SignedTransaction = future.getOrThrow()
 
-        val flow = StartGameFlow(partyB)
-        val future = nodeA.startFlow(flow)
+        assert(ptx.tx.inputs.isEmpty())
+        assert(ptx.tx.outputs.size == 1)
+        assert(ptx.tx.outputs[0].data is BoardState)
+        assert(ptx.tx.commands.singleOrNull() != null)
+        assert(ptx.tx.commands.single().value is BoardContract.Commands.StartGame)
+        assert(ptx.tx.requiredSigningKeys.equals(setOf(partyA.owningKey, partyB.owningKey)))
+    }
+
+    @Test
+    fun flowReturnsTransactionSignedByBothParties() {
+        val future = nodeA.startFlow(StartGameFlow(partyB))
         mockNetwork.runNetwork() // ???
         val stx = future.getOrThrow()
         stx.verifyRequiredSignatures()
@@ -56,12 +69,7 @@ class StartGameFlowTests {
 
     @Test
     fun flowRecordsTheSameTransactionInBothPartyVaults() {
-        val partyA = nodeA.info.chooseIdentityAndCert().party
-        val partyB = nodeB.info.chooseIdentityAndCert().party
-        //val boardState = BoardState(partyA, partyB)
-
-        val flow = StartGameFlow(partyB)
-        val future = nodeA.startFlow(flow)
+        val future = nodeA.startFlow(StartGameFlow(partyB))
         mockNetwork.runNetwork() // ???
         val stx = future.getOrThrow()
 
@@ -72,6 +80,5 @@ class StartGameFlowTests {
             assertEquals(txHash, stx.id)
         }
     }
-
 
 }

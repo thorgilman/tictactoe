@@ -46,7 +46,7 @@ class SubmitTurnFlow(val x: Int, val y: Int) : FlowLogic<SignedTransaction>() {
 
 
         // Create Command Object
-        val command = Command(BoardContract.Commands.MakeMove(), inputBoardState.participants.map { it.owningKey })
+        val command = Command(BoardContract.Commands.SubmitTurn(), inputBoardState.participants.map { it.owningKey })
 
         //inputBoardState.printBoard()
         val outputBoardState = inputBoardState.returnNewBoardAfterMove(Pair(x,y))
@@ -71,7 +71,8 @@ class SubmitTurnFlow(val x: Int, val y: Int) : FlowLogic<SignedTransaction>() {
         val tx = subFlow(FinalityFlow(stx, session))
 
         // TODO TODO TODO
-        if (outputBoardState.isGameOver()) subFlow(EndGameFlow(outputBoardState.linearId))
+        // Return this tx if isGameOver?
+        if (BoardContract.BoardUtils.isGameOver(outputBoardState)) subFlow(EndGameFlow(outputBoardState.linearId))
 
         return tx
     }

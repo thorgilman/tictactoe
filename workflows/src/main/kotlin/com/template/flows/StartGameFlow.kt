@@ -39,8 +39,8 @@ class StartGameFlow(val otherPlayerParty: Party) : FlowLogic<SignedTransaction>(
 
         val tx = subFlow(FinalityFlow(stx, targetSession))
 
-        System.out.println("You will be PlayerO")
-        System.out.println("It's your turn!")
+        println("You will be PlayerO")
+        println("It's your turn!")
         initialBoardState.printBoard()
 
         return tx
@@ -58,9 +58,9 @@ class StartGameFlowResponder(val counterpartySession: FlowSession) : FlowLogic<S
             override fun checkTransaction(stx: SignedTransaction) = requireThat {
                 val output = stx.tx.outputs.single().data
                 // TODO
-                System.out.println("You will be PlayerX")
+                println("You will be PlayerX")
                 (output as BoardState).printBoard()
-                System.out.println("Wait for the other player...")
+                println("Wait for the other player...")
             }
         }
         val txWeJustSignedId = subFlow(signedTransactionFlow)
