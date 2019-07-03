@@ -1,0 +1,24 @@
+{
+  "name": "tic-tac-toe",
+  "version": "1.0.0",
+  "description": "<p align=\"center\">   <img src=\"https://www.corda.net/wp-content/uploads/2016/11/fg005_corda_b.png\" alt=\"Corda\" width=\"500\"> </p>",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thorgilman/tictactoe.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/thorgilman/tictactoe/issues"
+  },
+  "homepage": "https://github.com/thorgilman/tictactoe#readme",
+  "dependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-preset-react-app": "^3.1.2"
+  }
+}
