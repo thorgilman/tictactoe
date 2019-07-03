@@ -52,6 +52,8 @@ class BoardContract : Contract {
                 val playerChar = if (inputBoardState.isPlayerXTurn) 'X' else 'O'
                 "Not valid board update." using BoardUtils.checkIfValidBoardUpdate(inputBoardState.board, outputBoardState.board, playerChar)
 
+                "Participants should not change" using (inputBoardState.participants == outputBoardState.participants)
+
             }
 
             is Commands.EndGame -> requireThat{
@@ -67,10 +69,7 @@ class BoardContract : Contract {
             }
 
         }
-
     }
-
-
 
 
     class BoardUtils {
@@ -94,10 +93,6 @@ class BoardContract : Contract {
 
             fun checkIfValidBoardUpdate(inputBoard: Array<CharArray>, outputBoard: Array<CharArray>, playerChar: Char): Boolean {
 
-                // inputBoard.forEach { it.forEach { print(it) } }
-                // println()
-                // outputBoard.forEach { it.forEach { print(it) } }
-
                 var numUpdates = 0
                 for (x in (0..2)) {
                     for (y in (0..2)) {
@@ -117,10 +112,7 @@ class BoardContract : Contract {
                     }
                 }
 
-                if (numUpdates != 1) {
-                    println("MORE THAN ONE UPDATE!!!!!!" + numUpdates)
-                    return false // Board should only be updated in one place
-                }
+                if (numUpdates != 1) return false // Board should only be updated in one place
                 return true
             }
 

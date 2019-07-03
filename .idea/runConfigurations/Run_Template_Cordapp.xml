@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Run Template Cordapp" type="JetRunConfigurationType" factoryName="Kotlin" singleton="true">
-    <module name="com.template.workflows.test" />
+    <module name="tic-tac-toe.workflows.test" />
     <option name="VM_PARAMETERS" value="-ea -javaagent:lib/quasar.jar" />
     <option name="PROGRAM_PARAMETERS" value="" />
     <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
