@@ -71,11 +71,10 @@ class Controller(rpc: NodeRPCConnection) {
 
 
 
-    @PostMapping(value = [ "start-game" ], produces = [MediaType.TEXT_PLAIN_VALUE], headers = [ "Content-Type=application/x-www-form-urlencoded" ])
+    @PostMapping(value = ["start-game"], produces = [MediaType.TEXT_PLAIN_VALUE], headers = [ "Content-Type=application/x-www-form-urlencoded" ])
     fun startGame(request: HttpServletRequest): ResponseEntity<String> {
 
         val otherParty = request.getParameter("otherParty") as Party // TODO
-
 
         return try {
             val signedTx = proxy.startTrackedFlow(::StartGameFlow, otherParty).returnValue.getOrThrow()
@@ -93,7 +92,7 @@ class Controller(rpc: NodeRPCConnection) {
     }
 
 
-    @PostMapping(value = [ "submit-turn" ], headers = [ "Content-Type=application/json" ])
+    @PostMapping(value = ["submit-turn"], headers = [ "Content-Type=application/json" ])
     fun submitTurn(request: HttpServletRequest): ResponseEntity<String> {
         val index = request.inputStream.readTextAndClose().toInt()
         var x = -1
