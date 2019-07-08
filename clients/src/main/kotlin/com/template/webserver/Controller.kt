@@ -69,7 +69,11 @@ class Controller(rpc: NodeRPCConnection) {
         return "Err"
     }
 
-
+    @GetMapping(value = ["other-port"])
+    private fun otherPort(): Int {
+        // TODO make more dynamic
+        return (proxy.networkMapSnapshot() - proxy.nodeInfo()).map { it.addresses.single().port }.single()
+    }
 
     @PostMapping(value = ["start-game"], produces = [MediaType.TEXT_PLAIN_VALUE], headers = [ "Content-Type=application/x-www-form-urlencoded" ])
     fun startGame(request: HttpServletRequest): ResponseEntity<String> {
@@ -92,7 +96,7 @@ class Controller(rpc: NodeRPCConnection) {
     }
 
 
-    @PostMapping(value = ["submit-turn"], headers = [ "Content-Type=application/json" ])
+    @PostMapping(value = ["submit-turn"], headers = ["Content-Type=application/json"])
     fun submitTurn(request: HttpServletRequest): ResponseEntity<String> {
         val index = request.inputStream.readTextAndClose().toInt()
         var x = -1
@@ -112,10 +116,12 @@ class Controller(rpc: NodeRPCConnection) {
             val signedTx = proxy.startTrackedFlow(::SubmitTurnFlow, x, y).returnValue.getOrThrow()
             ResponseEntity.status(HttpStatus.CREATED).body("Transaction id ${signedTx.id} committed to ledger.\n")
 
+
         } catch (ex: Throwable) {
             logger.error(ex.message, ex)
             ResponseEntity.badRequest().body(ex.message!!)
         }
+
     }
 
 

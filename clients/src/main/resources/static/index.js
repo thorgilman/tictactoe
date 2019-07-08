@@ -1,14 +1,37 @@
+
 onLoad();
 
 function onLoad() {
-
     var buttons = document.getElementsByClassName("tic");
     for(var i=0; i < buttons.length; i++) {
        let obj = i;
        buttons[i].addEventListener("click", function() {eventSubmitTurn(obj);}, false);
     }
     resetPage();
+    checkForUpdate();
 }
+
+var myBoard;
+function checkForUpdate() {
+
+    var check = function() {
+
+        axios.get('board').then(function (result) {
+            var array = Array.from(result.data);
+            for (var i=0; i<array.length; i++) {
+                if (array[i] != myBoard[i]) {
+                    resetPage();
+                    myBoard = array;
+                }
+            }
+        });
+
+        setTimeout(check, 2000); // check again in a second
+    }
+
+    check();
+}
+
 
 function resetPage() {
     setIdentityLabel();
@@ -20,6 +43,7 @@ function resetPage() {
             if (array[i] == 'E') buttons[i].innerHTML = ' ';
             else buttons[i].innerHTML = array[i];
         }
+        myBoard = array;
     });
 }
 
@@ -48,6 +72,15 @@ function eventSubmitTurn(i) {
     axios.post('submit-turn', i, {headers: {'Content-Type': 'application/json'}})
     .then(response => {
           	console.log(response);
+
+          	resetPage();
+
+//          	axios.get('other-port').then(function (result) {
+                //               var otherPort = result.data
+                //
+                //
+                //            })
+
           })
           .catch(error => {
               console.log(error.response);
@@ -55,7 +88,5 @@ function eventSubmitTurn(i) {
 
     // TODO wait???
     // TODO make other party reset
-    setTimeout(function(){
-        resetPage();
-    }, 400);
+
 }
