@@ -1,50 +1,58 @@
-body {
-  font: 14px "Century Gothic", Futura, sans-serif;
-  margin: 20px;
+body{
+  background: #212121;
+  color: #666;
 }
-
-ol, ul {
-  padding-left: 30px;
-}
-
-.board-row:after {
-  clear: both;
-  content: "";
-  display: table;
-}
-
-.status {
-  margin-bottom: 10px;
-}
-
-.square {
-  background: #fff;
-  border: 1px solid #999;
-  float: left;
-  font-size: 24px;
-  font-weight: bold;
-  line-height: 34px;
-  height: 34px;
-  margin-right: -1px;
-  margin-top: -1px;
-  padding: 0;
+h1{
   text-align: center;
-  width: 34px;
+  color: #fff;
 }
-
-.square:focus {
-  outline: none;
+.clearfix{
+  clear: both;
 }
-
-.kbd-navigation .square:focus {
-  background: #ddd;
+#box{
+  width: 350px;
+  overflow: auto;
+  margin: 40px auto;
+  background: #666;
+  padding-bottom: 40px;
+  border-radius: 10px;
 }
-
-.game {
-  display: flex;
-  flex-direction: row;
+#message{
+  background: #333;
+  color: #fff;
 }
-
-.game-info {
-  margin-left: 20px;
+#gameBoard li{
+  float: left;
+  margin: 10px;
+  height: 70px;
+  width: 70px;
+  font-size: 50px;
+  background: #333;
+  color: #ccc;
+  list-style: none;
+  text-align: center;
+  border-radius: 5px;
+}
+#gameBoard li:hover, #reset:hover{
+  cursor: pointer;
+  background: #000;
+}
+#reset{
+  border: 0;
+  background: #444;
+  color: #fff;
+  width: 70%;
+  padding: 15px;
+  border-radius: 5px;
+}
+.o{
+  color: green !important;
+}
+.x{
+  color: red !important;
+}
+footer{
+  display: block;
+  text-align: center;
+  padding-top: 20px;
 }

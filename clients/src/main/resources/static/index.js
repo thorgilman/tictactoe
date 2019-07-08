@@ -1,148 +1,61 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
-import './index.css';
+onLoad();
 
-function Square(props) {
-  return (
-    <button className="square" onClick={props.onClick}>
-      {props.value}
-    </button>
-  );
+function onLoad() {
+
+    var buttons = document.getElementsByClassName("tic");
+    for(var i=0; i < buttons.length; i++) {
+       let obj = i;
+       buttons[i].addEventListener("click", function() {eventSubmitTurn(obj);}, false);
+    }
+    resetPage();
 }
 
-class Board extends React.Component {
-  renderSquare(i) {
-    return (
-      <Square
-        value={this.props.squares[i]}
-        onClick={() => this.props.onClick(i)}
-      />
-    );
-  }
-
-  render() {
-    return (
-      <div>
-        <div className="board-row">
-          {this.renderSquare(0)}
-          {this.renderSquare(1)}
-          {this.renderSquare(2)}
-        </div>
-        <div className="board-row">
-          {this.renderSquare(3)}
-          {this.renderSquare(4)}
-          {this.renderSquare(5)}
-        </div>
-        <div className="board-row">
-          {this.renderSquare(6)}
-          {this.renderSquare(7)}
-          {this.renderSquare(8)}
-        </div>
-      </div>
-    );
-  }
-}
-
-class Game extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      history: [
-        {
-          squares: Array(9).fill(null)
+function resetPage() {
+    setIdentityLabel();
+    setIsMyTurnLabel();
+    var buttons = document.getElementsByClassName("tic");
+    axios.get('board').then(function (result) {
+        var array = Array.from(result.data);
+        for (var i=0; i<array.length; i++) {
+            if (array[i] == 'E') buttons[i].innerHTML = ' ';
+            else buttons[i].innerHTML = array[i];
         }
-      ],
-      stepNumber: 0,
-      xIsNext: true
-    };
-  }
-
-  handleClick(i) {
-    const history = this.state.history.slice(0, this.state.stepNumber + 1);
-    const current = history[history.length - 1];
-    const squares = current.squares.slice();
-    if (calculateWinner(squares) || squares[i]) {
-      return;
-    }
-    squares[i] = this.state.xIsNext ? "X" : "O";
-    this.setState({
-      history: history.concat([
-        {
-          squares: squares
-        }
-      ]),
-      stepNumber: history.length,
-      xIsNext: !this.state.xIsNext
     });
-  }
-
-  jumpTo(step) {
-    this.setState({
-      stepNumber: step,
-      xIsNext: (step % 2) === 0
-    });
-  }
-
-  render() {
-    const history = this.state.history;
-    const current = history[this.state.stepNumber];
-    const winner = calculateWinner(current.squares);
-
-    const moves = history.map((step, move) => {
-      const desc = move ?
-        'Go to move #' + move :
-        'Go to game start';
-      return (
-        <li key={move}>
-          <button onClick={() => this.jumpTo(move)}>{desc}</button>
-        </li>
-      );
-    });
-
-    let status;
-    if (winner) {
-      status = "Winner: " + winner;
-    } else {
-      status = "Next player: " + (this.state.xIsNext ? "X" : "O");
-    }
-
-    return (
-      <div className="game">
-        <div className="game-board">
-          <Board
-            squares={current.squares}
-            onClick={i => this.handleClick(i)}
-          />
-        </div>
-        <div className="game-info">
-          <div>{status}</div>
-          <ol>{moves}</ol>
-        </div>
-      </div>
-    );
-  }
 }
 
-// ========================================
+function setIsMyTurnLabel() {
+    axios.get('my-turn').then(function (result) {
+        var isMyTurn = Boolean(result.data);
+        if (isMyTurn) document.getElementById("h2").innerHTML = "It's your turn!";
+        else document.getElementById("h2").innerHTML = "Wait for your turn...";
+    })
+    .then(response => {
+    	console.log(response);
+    })
+    .catch(error => {
+        console.log(error.response);
+    });
+}
 
-ReactDOM.render(<Game />, document.getElementById("root"));
+function setIdentityLabel() {
+    axios.get('you-are').then(function (result) {
+        document.getElementById("h1").innerHTML = result.data;
+    })
+}
 
-function calculateWinner(squares) {
-  const lines = [
-    [0, 1, 2],
-    [3, 4, 5],
-    [6, 7, 8],
-    [0, 3, 6],
-    [1, 4, 7],
-    [2, 5, 8],
-    [0, 4, 8],
-    [2, 4, 6]
-  ];
-  for (let i = 0; i < lines.length; i++) {
-    const [a, b, c] = lines[i];
-    if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-      return squares[a];
-    }
-  }
-  return null;
+function eventSubmitTurn(i) {
+
+    axios.post('submit-turn', i, {headers: {'Content-Type': 'application/json'}})
+    .then(response => {
+          	console.log(response);
+          })
+          .catch(error => {
+              console.log(error.response);
+          });
+
+    // TODO wait???
+    // TODO make other party reset
+    setTimeout(function(){
+        resetPage();
+    }, 400);
 }
