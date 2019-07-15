@@ -5,11 +5,13 @@ import com.template.flows.SubmitTurnFlow
 import com.template.states.BoardState
 import net.corda.core.crypto.internal.providerMap
 import net.corda.core.identity.CordaX500Name
+import net.corda.core.identity.CordaX500Name.Companion.parse
 import net.corda.core.identity.Party
 import net.corda.core.messaging.CordaRPCOps
 import net.corda.core.messaging.startFlow
 import net.corda.core.messaging.startTrackedFlow
 import net.corda.core.messaging.vaultQueryBy
+import net.corda.core.node.NodeInfo
 import net.corda.core.utilities.getOrThrow
 import net.corda.nodeapi.internal.config.toConfigValue
 import org.slf4j.LoggerFactory
@@ -25,6 +27,7 @@ import sun.misc.IOUtils
 import java.io.InputStream
 import java.nio.charset.Charset
 import javax.servlet.http.HttpServletRequest
+import javax.xml.soap.Node
 
 /**
  * Define your API endpoints here.
@@ -43,6 +46,16 @@ class Controller(rpc: NodeRPCConnection) {
 
     @GetMapping(value = ["my-turn"])
     private fun myTurn(): Boolean = proxy.vaultQueryBy<BoardState>().states.single().state.data.getCurrentPlayerParty().name == proxy.nodeInfo().legalIdentities.single().name
+
+
+    @GetMapping(value = ["nodes"])
+    private fun nodes(): List<String> {
+        var nodesList = proxy.networkMapSnapshot()
+        nodesList -= proxy.nodeInfo()
+        nodesList -= proxy.nodeInfoFromParty(proxy.notaryIdentities().single())!!
+        return nodesList.map { it.legalIdentitiesAndCerts.single().name.toString() }
+    }
+
 
     @GetMapping(value = ["my-board"], produces = ["text/plain"])
     private fun myBoard(): String {
@@ -69,21 +82,19 @@ class Controller(rpc: NodeRPCConnection) {
         return "Err"
     }
 
-    @GetMapping(value = ["other-port"])
-    private fun otherPort(): Int {
-        // TODO make more dynamic
-        return (proxy.networkMapSnapshot() - proxy.nodeInfo()).map { it.addresses.single().port }.single()
-    }
 
-    @PostMapping(value = ["start-game"], produces = [MediaType.TEXT_PLAIN_VALUE], headers = [ "Content-Type=application/x-www-form-urlencoded" ])
+
+    @PostMapping(value = ["start-game"], headers = ["Content-Type=application/json"])
     fun startGame(request: HttpServletRequest): ResponseEntity<String> {
 
-        val otherParty = request.getParameter("otherParty") as Party // TODO
+        val cordaX500NameString = request.inputStream.readTextAndClose()
+        val cordaX500Name = parse(cordaX500NameString)
+        val party = proxy.wellKnownPartyFromX500Name(cordaX500Name)!!
+        // TODO: if (party == null) err
 
         return try {
-            val signedTx = proxy.startTrackedFlow(::StartGameFlow, otherParty).returnValue.getOrThrow()
+            val signedTx = proxy.startTrackedFlow(::StartGameFlow, party).returnValue.getOrThrow()
             ResponseEntity.status(HttpStatus.CREATED).body("Transaction id ${signedTx.id} committed to ledger.\n")
-
         } catch (ex: Throwable) {
             logger.error(ex.message, ex)
             ResponseEntity.badRequest().body(ex.message!!)
