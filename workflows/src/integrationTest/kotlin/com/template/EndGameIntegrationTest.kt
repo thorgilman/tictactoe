@@ -1,50 +1,22 @@
 package com.template
 
 import com.template.contracts.BoardContract
-import com.template.flows.EndGameFlow
-import com.template.flows.Responder
-import com.template.flows.StartGameFlow
-import com.template.flows.SubmitTurnFlow
+import com.template.flows.*
 import com.template.states.BoardState
-import net.corda.client.rpc.CordaRPCClient
+import com.template.states.Status
 import net.corda.core.contracts.TransactionVerificationException
 import net.corda.core.flows.FlowException
-import net.corda.core.identity.CordaX500Name
-import net.corda.core.identity.Party
-import net.corda.core.messaging.CordaRPCOps
-import net.corda.core.messaging.startFlow
-import net.corda.core.messaging.vaultTrackBy
-import net.corda.core.node.services.Vault
-import net.corda.core.node.services.Vault.Update
 import net.corda.core.node.services.queryBy
 import net.corda.core.node.services.vault.QueryCriteria
 import net.corda.core.transactions.SignedTransaction
 import net.corda.core.utilities.getOrThrow
-import net.corda.finance.contracts.asset.Cash
-import net.corda.finance.flows.CashIssueAndPaymentFlow
-import net.corda.finance.flows.CashPaymentFlow
-import net.corda.node.services.Permissions.Companion.invokeRpc
-import net.corda.node.services.Permissions.Companion.startFlow
-import net.corda.testing.core.ALICE_NAME
-import net.corda.testing.core.TestIdentity
-import net.corda.testing.core.expect
-import net.corda.testing.core.expectEvents
-import net.corda.testing.driver.DriverDSL
-import net.corda.testing.driver.DriverParameters
-import net.corda.testing.driver.NodeHandle
-import net.corda.testing.driver.driver
 import net.corda.testing.internal.chooseIdentity
-import net.corda.testing.internal.chooseIdentityAndCert
 import net.corda.testing.node.*
-import org.bouncycastle.pqc.crypto.newhope.NHOtherInfoGenerator
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
-import java.util.*
-import java.util.concurrent.Future
-import kotlin.test.assert
+import java.lang.IllegalStateException
 import kotlin.test.assertEquals
-import kotlin.test.expect
 
 class EndGameIntegrationTest {
 
@@ -60,7 +32,7 @@ class EndGameIntegrationTest {
         nodeA = mockNetwork.createNode(MockNodeParameters())
         nodeB = mockNetwork.createNode(MockNodeParameters())
         listOf(nodeA, nodeB).forEach {
-            it.registerInitiatedFlow(Responder::class.java)
+            it.registerInitiatedFlow(EndGameFlowResponder::class.java)
         }
     }
 
@@ -112,9 +84,15 @@ class EndGameIntegrationTest {
         assertEquals(partyB, boardState.getCurrentPlayerParty())
         assert(BoardContract.BoardUtils.isGameOver(boardState))
 
+        assertEquals(nodeA.services.vaultService.queryBy<BoardState>(queryCriteria).states.single().state.data.status, Status.GAME_OVER)
+        assertEquals(nodeB.services.vaultService.queryBy<BoardState>(queryCriteria).states.single().state.data.status, Status.GAME_OVER)
+
+        // End Game
+        val futureEndGame = nodeA.startFlow(EndGameFlow())
+        mockNetwork.runNetwork()
+
         assert(nodeA.services.vaultService.queryBy<BoardState>(queryCriteria).states.isEmpty())
         assert(nodeB.services.vaultService.queryBy<BoardState>(queryCriteria).states.isEmpty())
-
     }
 
 
@@ -178,14 +156,23 @@ class EndGameIntegrationTest {
         val boardStateNodeB = nodeB.services.vaultService.queryBy<BoardState>(queryCriteria).states.single()
         assertEquals(boardStateNodeA.state.data.linearId, boardStateNodeB.state.data.linearId)
 
+        assertEquals(nodeA.services.vaultService.queryBy<BoardState>(queryCriteria).states.single().state.data.status, Status.GAME_IN_PROGRESS)
+        assertEquals(nodeB.services.vaultService.queryBy<BoardState>(queryCriteria).states.single().state.data.status, Status.GAME_IN_PROGRESS)
+
         // Move #9
         boardState = makeMoveAndGetNewBoardState(nodeA, 2,1)
         assertEquals(partyB, boardState.getCurrentPlayerParty())
         assert(BoardContract.BoardUtils.isGameOver(boardState))
 
+        assertEquals(nodeA.services.vaultService.queryBy<BoardState>(queryCriteria).states.single().state.data.status, Status.GAME_OVER)
+        assertEquals(nodeB.services.vaultService.queryBy<BoardState>(queryCriteria).states.single().state.data.status, Status.GAME_OVER)
+
+        // End Game
+        nodeA.startFlow(EndGameFlow())
+        mockNetwork.runNetwork()
+
         assert(nodeA.services.vaultService.queryBy<BoardState>(queryCriteria).states.isEmpty())
         assert(nodeB.services.vaultService.queryBy<BoardState>(queryCriteria).states.isEmpty())
-
     }
 
 
@@ -220,8 +207,7 @@ class EndGameIntegrationTest {
             exception = e
         }
         assert(exception is TransactionVerificationException)
-        assertEquals(exception.cause.toString(), "java.lang.IllegalArgumentException: Failed requirement: Not valid board update.")
-
+        assertEquals("java.lang.IllegalArgumentException: Failed requirement: Not valid board update.", exception.cause.toString())
     }
 
 
@@ -245,7 +231,8 @@ class EndGameIntegrationTest {
         assert(!BoardContract.BoardUtils.isGameOver(boardState))
 
         // Move #2
-        val future = nodeB.startFlow(EndGameFlow(boardState.linearId))
+        // TODO val future = nodeB.startFlow(EndGameFlow(boardState.linearId))
+        val future = nodeB.startFlow(EndGameFlow())
         mockNetwork.runNetwork()
 
         var exception = Exception()
@@ -256,7 +243,7 @@ class EndGameIntegrationTest {
             exception = e
         }
         assert(exception is TransactionVerificationException)
-        assertEquals(exception.cause.toString(), "java.lang.IllegalArgumentException: Failed requirement: The game must be over.")
+        assertEquals("java.lang.IllegalArgumentException: Failed requirement: Input board must have status GAME_OVER.", exception.cause.toString())
     }
 
     @Test
@@ -290,8 +277,7 @@ class EndGameIntegrationTest {
             exception = e
         }
         assert(exception is FlowException)
-        assertEquals(exception.message.toString(), "It's not your turn!")
-
+        assertEquals("It's not your turn!", exception.message.toString())
     }
 
     @Test
@@ -314,7 +300,7 @@ class EndGameIntegrationTest {
         assert(!BoardContract.BoardUtils.isGameOver(boardState))
 
         // Move #2
-        val future = nodeA.startFlow(SubmitTurnFlow(0, 3))
+        val future = nodeB.startFlow(SubmitTurnFlow(0, 3))
         mockNetwork.runNetwork()
 
         var exception = Exception()
@@ -324,12 +310,10 @@ class EndGameIntegrationTest {
         catch (e: Exception) {
             exception = e
         }
-        assert(exception is FlowException)
-        assertEquals(exception.message.toString(), "It's not your turn!")
+        assert(exception is IllegalStateException)
+        assertEquals("Invalid board index.", exception.message.toString())
 
     }
-
-
 
 
     private fun makeMoveAndGetNewBoardState(node: StartedMockNode, x: Int, y: Int): BoardState {
@@ -339,26 +323,5 @@ class EndGameIntegrationTest {
     }
 
     private fun getBoardState(tx: SignedTransaction): BoardState = tx.coreTransaction.outputsOfType<BoardState>().single()
-
-/*
-    // Runs a test inside the Driver DSL, which provides useful functions for starting nodes, etc.
-    private fun withDriver(test: DriverDSL.() -> Unit) = driver(
-        DriverParameters(isDebug = true, startNodesInProcess = true)
-    ) {
-        /////
-    }
-
-    // Makes an RPC call to retrieve another node's name from the network map.
-    private fun NodeHandle.resolveName(name: CordaX500Name) = rpc.wellKnownPartyFromX500Name(name)!!.name
-
-    // Resolves a list of futures to a list of the promised values.
-    private fun <T> List<Future<T>>.waitForAll(): List<T> = map { it.getOrThrow() }
-
-    // Starts multiple nodes simultaneously, then waits for them all to be ready.
-    private fun DriverDSL.startNodes(vararg identities: TestIdentity) = identities
-        .map { startNode(providedName = it.name) }
-        .waitForAll()
-
- */
 
 }

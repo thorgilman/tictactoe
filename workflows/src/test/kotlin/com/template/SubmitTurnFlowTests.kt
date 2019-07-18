@@ -1,15 +1,13 @@
 package com.template
 
 import com.template.contracts.BoardContract
-import com.template.flows.Responder
 import com.template.flows.StartGameFlow
 import com.template.flows.SubmitTurnFlow
+import com.template.flows.SubmitTurnFlowResponder
 import com.template.states.BoardState
-import net.corda.core.identity.CordaX500Name
 import net.corda.core.identity.Party
 import net.corda.core.transactions.SignedTransaction
 import net.corda.core.utilities.getOrThrow
-import net.corda.testing.core.TestIdentity
 import net.corda.testing.internal.chooseIdentityAndCert
 import net.corda.testing.node.MockNetwork
 import net.corda.testing.node.MockNetworkParameters
@@ -43,17 +41,14 @@ class SubmitTurnFlowTests {
         partyA = nodeA.info.chooseIdentityAndCert().party
         partyB = nodeB.info.chooseIdentityAndCert().party
         listOf(nodeA, nodeB).forEach {
-            it.registerInitiatedFlow(Responder::class.java)
+            it.registerInitiatedFlow(SubmitTurnFlowResponder::class.java)
         }
         nodeA.startFlow(StartGameFlow(partyB))
         mockNetwork.runNetwork()
-
-
     }
 
     @After
     fun tearDown() = mockNetwork.stopNodes()
-
 
     @Test
     fun flowReturnsCorrectlyFormedTransaction() {
@@ -67,15 +62,14 @@ class SubmitTurnFlowTests {
         assert(ptx.tx.outputs[0].data is BoardState)
         assert(ptx.tx.commands.singleOrNull() != null)
         assert(ptx.tx.commands.single().value is BoardContract.Commands.SubmitTurn)
-        assert(ptx.tx.commands[0].signers.equals(listOf(partyA.owningKey, partyB.owningKey)))
+        assert(ptx.tx.commands[0].signers == listOf(partyA.owningKey, partyB.owningKey))
         ptx.verifyRequiredSignatures()
     }
-
 
     @Test
     fun flowReturnsTransactionSignedByBothParties() {
         val future = nodeA.startFlow(SubmitTurnFlow(0,0))
-        mockNetwork.runNetwork() // ???
+        mockNetwork.runNetwork()
         val stx = future.getOrThrow()
         stx.verifyRequiredSignatures()
     }
@@ -83,7 +77,7 @@ class SubmitTurnFlowTests {
     @Test
     fun flowRecordsTheSameTransactionInBothPartyVaults() {
         val future = nodeA.startFlow(SubmitTurnFlow(0,0))
-        mockNetwork.runNetwork() // ???
+        mockNetwork.runNetwork()
         val stx = future.getOrThrow()
 
         listOf(nodeA, nodeB).map {

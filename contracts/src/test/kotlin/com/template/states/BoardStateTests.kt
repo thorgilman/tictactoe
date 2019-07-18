@@ -49,6 +49,19 @@ class BoardStateTests {
     }
 
     @Test
+    fun hasStatusFieldOfCorrectType() {
+        assertEquals(BoardState::class.java.getDeclaredField("status").type, Status::class.java)
+    }
+
+    @Test
+    fun isStatusFieldSetToGameInProgress() {
+        val partyA = TestIdentity(CordaX500Name("PartyA","London","GB")).party
+        val partyB = TestIdentity(CordaX500Name("PartyB","New York","US")).party
+        val boardState = BoardState(partyA, partyB)
+        assert(boardState.status == Status.GAME_IN_PROGRESS)
+    }
+
+    @Test
     fun hasLinearIdFieldOfCorrectType() {
         assertEquals(BoardState::class.java.getDeclaredField("linearId").type, UniqueIdentifier::class.java)
     }
@@ -60,11 +73,13 @@ class BoardStateTests {
         val playerXIdx = fields.indexOf(BoardState::class.java.getDeclaredField("playerX"))
         val isPlayerXTurnIdx = fields.indexOf(BoardState::class.java.getDeclaredField("isPlayerXTurn"))
         val boardIdx = fields.indexOf(BoardState::class.java.getDeclaredField("board"))
+        val statusIdx = fields.indexOf(BoardState::class.java.getDeclaredField("status"))
         val linearIdIdx = fields.indexOf(BoardState::class.java.getDeclaredField("linearId"))
         assert(playerOIdx < playerXIdx)
         assert(playerXIdx < isPlayerXTurnIdx)
         assert(isPlayerXTurnIdx < boardIdx)
-        assert(boardIdx < linearIdIdx)
+        assert(boardIdx < statusIdx)
+        assert(statusIdx < linearIdIdx)
     }
 
     @Test

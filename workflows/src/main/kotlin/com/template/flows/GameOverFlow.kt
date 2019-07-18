@@ -3,11 +3,9 @@ package com.template.flows
 import co.paralleluniverse.fibers.Suspendable
 import com.template.contracts.BoardContract
 import com.template.states.BoardState
-import net.corda.core.contracts.Command
+import com.template.states.Status
+import net.corda.core.contracts.*
 import net.corda.core.contracts.Requirements.using
-import net.corda.core.contracts.StateAndRef
-import net.corda.core.contracts.StateRef
-import net.corda.core.contracts.requireThat
 import net.corda.core.flows.*
 import net.corda.core.identity.CordaX500Name
 import net.corda.core.identity.Party
@@ -24,7 +22,7 @@ import net.corda.core.utilities.ProgressTracker
 
 @InitiatingFlow
 @StartableByRPC
-class SubmitTurnFlow(private val x: Int, private val y: Int) : FlowLogic<SignedTransaction>() {
+class GameOverFlow(val linearId: UniqueIdentifier) : FlowLogic<SignedTransaction>() {
 
     override val progressTracker = ProgressTracker()
 
@@ -32,24 +30,21 @@ class SubmitTurnFlow(private val x: Int, private val y: Int) : FlowLogic<SignedT
     override fun call(): SignedTransaction {
 
         val notary = serviceHub.networkMapCache.notaryIdentities.single()
-        val criteria = QueryCriteria.VaultQueryCriteria(Vault.StateStatus.UNCONSUMED)
-        val results = serviceHub.vaultService.queryBy<BoardState>(criteria)
+        val queryCriteria = QueryCriteria.LinearStateQueryCriteria(linearId = listOf(linearId))
+        val results = serviceHub.vaultService.queryBy<BoardState>(queryCriteria)
         val states = results.states
         if (states.size != 1) {} // TODO err
 
         val inputBoardStateAndRef = states.single()
         val inputBoardState = inputBoardStateAndRef.state.data
 
-        if (inputBoardState.getCurrentPlayerParty() != ourIdentity) throw FlowException("It's not your turn!")
-
         val opponentParty = (inputBoardState.participants - ourIdentity).single() as Party
 
         // Create Command Object
-        val command = Command(BoardContract.Commands.SubmitTurn(), inputBoardState.participants.map { it.owningKey })
+        val command = Command(BoardContract.Commands.GameOver(), inputBoardState.participants.map { it.owningKey })
 
-        val outputBoardState = inputBoardState.returnNewBoardAfterMove(Pair(x,y))
-
-        System.out.println("Wait for the other player...")
+        // Create an output state where the only update is the Status
+        val outputBoardState = inputBoardState.copy(status = Status.GAME_OVER)
 
         // Create TransactionBuilder Object
         val txBuilder = TransactionBuilder(notary)
@@ -64,18 +59,13 @@ class SubmitTurnFlow(private val x: Int, private val y: Int) : FlowLogic<SignedT
         // Get session to other party
         val session = initiateFlow(opponentParty)
         val stx = subFlow(CollectSignaturesFlow(ptx, listOf(session)))
-        val tx = subFlow(FinalityFlow(stx, session))
 
-        // TODO TODO TODO
-        // Return this tx if isGameOver?
-        if (BoardContract.BoardUtils.isGameOver(outputBoardState)) subFlow(GameOverFlow(outputBoardState.linearId))
-
-        return tx
+        return subFlow(FinalityFlow(stx, session))
     }
 }
 
-@InitiatedBy(SubmitTurnFlow::class)
-class SubmitTurnFlowResponder(val counterpartySession: FlowSession) : FlowLogic<SignedTransaction>() {
+@InitiatedBy(GameOverFlow::class)
+class GameOverFlowResponder(val counterpartySession: FlowSession) : FlowLogic<SignedTransaction>() {
     @Suspendable
     override fun call(): SignedTransaction {
 
@@ -84,10 +74,6 @@ class SubmitTurnFlowResponder(val counterpartySession: FlowSession) : FlowLogic<
         }
 
         val txWeJustSigned = subFlow(signedTransactionFlow)
-
-        println("It's your turn!")
-        (txWeJustSigned.tx.outputs.single().data as BoardState).printBoard()
-
         return subFlow(ReceiveFinalityFlow(counterpartySession, txWeJustSigned.id))
     }
 }

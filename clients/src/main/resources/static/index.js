@@ -1,6 +1,6 @@
 
 onLoad();
-
+// Runs on load to setup page
 function onLoad() {
     var buttons = document.getElementsByClassName("tic");
     for(var i=0; i < buttons.length; i++) {
@@ -10,13 +10,16 @@ function onLoad() {
 
     setUpPopUpWindow();
     setUpChooseOpponentWindow();
-
     startUpdateCheck();
 }
+
 
 function setUpPopUpWindow() {
     var modal = document.getElementById("popUpModel");
     document.getElementsByClassName("closePopUp")[0].onclick = function() {
+
+      clearBoard();
+      document.getElementById("chooseOpponentModel").style.display = "block";
       modal.style.display = "none";
     }
     window.onclick = function(event) {
@@ -24,6 +27,18 @@ function setUpPopUpWindow() {
         modal.style.display = "none";
       }
     }
+}
+
+
+function clearBoard() {
+    var buttons = document.getElementsByClassName("tic");
+    for (var i=0; i<buttons.length; i++) {
+        buttons[i].innerHTML = ' ';
+    }
+    myBoard = null;
+    document.getElementById("h1").innerHTML = "";
+    document.getElementById("h2").innerHTML = "";
+
 }
 
 function popUp(text) {
@@ -72,8 +87,9 @@ function setUpChooseOpponentWindow() {
 
 }
 
-function eventStartGame(name) {
-    axios.post('start-game', name, {headers: {'Content-Type': 'application/json'}})
+// Attempts to run StartGameFlow with party
+function eventStartGame(party) {
+    axios.post('start-game', party, {headers: {'Content-Type': 'application/json'}})
     .then(response => {
         console.log(response);
     })
@@ -83,18 +99,53 @@ function eventStartGame(name) {
 }
 
 
+// Pings "board" every couple seconds to check for updates
 var myBoard;
 function startUpdateCheck() {
+
     var check = function() {
+
         axios.get('board').then(function (result) {
-            var array = Array.from(result.data);
-            if (myBoard == null) resetPage();
-            for (var i=0; i<array.length; i++) {
-                if (array[i] != myBoard[i]) {
-                    resetPage();
-                    myBoard = array;
+
+            if (typeof result.data !== 'string') {
+                document.getElementById("chooseOpponentModel").style.display = "none";
+
+                var array = Array.from(result.data);
+                if (myBoard == null) resetPage();
+                for (var i=0; i<array.length; i++) {
+                    if (array[i] != myBoard[i]) {
+                        resetPage();
+                        myBoard = array;
+                    }
                 }
+
             }
+            else if (document.getElementById("popUpModel").style.display != "block" && document.getElementById("chooseOpponentModel").style.display != "block") {
+                // Game Over
+
+                // TODO: display last board state
+
+                axios.get('get-winner-text').then(function (result) {
+                    popUp(result.data);
+                })
+
+                function runEndGameFlow() {
+                    setTimeout(function() {
+
+                        axios.post('end-game', {headers: {'Content-Type': 'application/json'}})
+                        .then(response => {
+                            console.log(response);
+                        })
+                        .catch(error => {
+                            console.log(error.response);
+                        });
+
+                    }, 2000);
+                }
+
+                runEndGameFlow();
+            }
+
         })
         .catch(error => {
             // TODO
@@ -104,7 +155,7 @@ function startUpdateCheck() {
     check();
 }
 
-
+// Resets the page to display board updates
 function resetPage() {
     setIdentityLabel();
     setIsMyTurnLabel();
@@ -139,23 +190,14 @@ function setIdentityLabel() {
     })
 }
 
+// Attempt to run SubmitTurnFlow with index i
 function eventSubmitTurn(i) {
 
     axios.post('submit-turn', i, {headers: {'Content-Type': 'application/json'}})
     .then(response => {
           	console.log(response);
 
-            // TODO
-            axios.get('board').then(function (result) {
-
-            })
-            .then(response => {
-                console.log(response);
-            })
-            .catch(error => {
-                popUp("You win!"); // TODO
-                console.log(error.response);
-            });
+            resetPage();
     })
     .catch(error => {
         console.log(error.response);

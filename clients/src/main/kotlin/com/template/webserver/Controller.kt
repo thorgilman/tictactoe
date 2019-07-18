@@ -1,8 +1,11 @@
 package com.template.webserver
 
+import com.template.contracts.BoardContract
+import com.template.flows.EndGameFlow
 import com.template.flows.StartGameFlow
 import com.template.flows.SubmitTurnFlow
 import com.template.states.BoardState
+import com.template.states.Status
 import net.corda.core.crypto.internal.providerMap
 import net.corda.core.identity.CordaX500Name
 import net.corda.core.identity.CordaX500Name.Companion.parse
@@ -47,15 +50,11 @@ class Controller(rpc: NodeRPCConnection) {
     @GetMapping(value = ["my-turn"])
     private fun myTurn(): Boolean = proxy.vaultQueryBy<BoardState>().states.single().state.data.getCurrentPlayerParty().name == proxy.nodeInfo().legalIdentities.single().name
 
-
     @GetMapping(value = ["nodes"])
     private fun nodes(): List<String> {
-        var nodesList = proxy.networkMapSnapshot()
-        nodesList -= proxy.nodeInfo()
-        nodesList -= proxy.nodeInfoFromParty(proxy.notaryIdentities().single())!!
+        val nodesList = proxy.networkMapSnapshot() - proxy.nodeInfo() - proxy.nodeInfoFromParty(proxy.notaryIdentities().single())!!
         return nodesList.map { it.legalIdentitiesAndCerts.single().name.toString() }
     }
-
 
     @GetMapping(value = ["my-board"], produces = ["text/plain"])
     private fun myBoard(): String {
@@ -79,19 +78,14 @@ class Controller(rpc: NodeRPCConnection) {
         val boardState = proxy.vaultQueryBy<BoardState>().states.single().state.data
         if (boardState.playerO == proxy.nodeInfo().legalIdentities.single()) return "You are Player O"
         else if (boardState.playerX == proxy.nodeInfo().legalIdentities.single()) return "You are Player X"
-        return "Err"
+        return "Error determining player"
     }
-
-
 
     @PostMapping(value = ["start-game"], headers = ["Content-Type=application/json"])
     fun startGame(request: HttpServletRequest): ResponseEntity<String> {
-
         val cordaX500NameString = request.inputStream.readTextAndClose()
         val cordaX500Name = parse(cordaX500NameString)
         val party = proxy.wellKnownPartyFromX500Name(cordaX500Name)!!
-        // TODO: if (party == null) err
-
         return try {
             val signedTx = proxy.startTrackedFlow(::StartGameFlow, party).returnValue.getOrThrow()
             ResponseEntity.status(HttpStatus.CREATED).body("Transaction id ${signedTx.id} committed to ledger.\n")
@@ -102,8 +96,22 @@ class Controller(rpc: NodeRPCConnection) {
     }
 
     @GetMapping(value = ["board"])
-    private fun board(): List<Char> {
-        return proxy.vaultQueryBy<BoardState>().states.single().state.data.board.flatMap { it.asList() }
+    private fun board(): List<Char>? {
+        val boardState = proxy.vaultQueryBy<BoardState>().states.single().state.data
+        if (boardState.status == Status.GAME_OVER) return null
+        else return boardState.board.flatMap { it.asList() }
+    }
+
+
+    @GetMapping(value = ["get-winner-text"])
+    private fun getWinnerText(): String {
+        val boardState = proxy.vaultQueryBy<BoardState>().states.single().state.data
+        val winningParty = BoardContract.BoardUtils.getWinner(boardState)
+        if (winningParty == null) return "No winner!"
+
+        val myParty = proxy.nodeInfo().legalIdentities.single()
+        if (myParty == winningParty) return "You win!"
+        return "You loose!"
     }
 
 
@@ -127,14 +135,22 @@ class Controller(rpc: NodeRPCConnection) {
             val signedTx = proxy.startTrackedFlow(::SubmitTurnFlow, x, y).returnValue.getOrThrow()
             ResponseEntity.status(HttpStatus.CREATED).body("Transaction id ${signedTx.id} committed to ledger.\n")
 
-
         } catch (ex: Throwable) {
             logger.error(ex.message, ex)
             ResponseEntity.badRequest().body(ex.message!!)
         }
-
     }
 
+    @PostMapping(value = ["end-game"], headers = ["Content-Type=application/json"])
+    fun endGame(request: HttpServletRequest): ResponseEntity<String> {
+        return try {
+            val signedTx = proxy.startTrackedFlow(::EndGameFlow).returnValue.getOrThrow()
+            ResponseEntity.status(HttpStatus.CREATED).body("Transaction id ${signedTx.id} committed to ledger.\n")
+        } catch (ex: Throwable) {
+            logger.error(ex.message, ex)
+            ResponseEntity.badRequest().body(ex.message!!)
+        }
+    }
 
     fun InputStream.readTextAndClose(charset: Charset = Charsets.UTF_8): String {
         return this.bufferedReader(charset).use { it.readText() }

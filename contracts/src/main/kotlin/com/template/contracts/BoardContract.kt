@@ -1,13 +1,15 @@
 package com.template.contracts
 
+import com.template.contracts.BoardContract.BoardUtils.Companion.checkForBoardEquality
 import com.template.states.BoardState
+import com.template.states.Status
 import net.corda.core.contracts.CommandData
 import net.corda.core.contracts.Contract
 import net.corda.core.contracts.requireSingleCommand
 import net.corda.core.contracts.requireThat
+import net.corda.core.identity.CordaX500Name
 import net.corda.core.identity.Party
 import net.corda.core.transactions.LedgerTransaction
-
 
 class BoardContract : Contract {
     companion object {
@@ -17,6 +19,7 @@ class BoardContract : Contract {
     interface Commands : CommandData {
         class StartGame : Commands
         class SubmitTurn : Commands
+        class GameOver: Commands
         class EndGame : Commands
     }
 
@@ -32,10 +35,13 @@ class BoardContract : Contract {
                 "The output state should be of type BoardState." using (tx.outputs[0].data is BoardState)
 
                 val outputBoardState = tx.outputStates[0] as BoardState
+                "Output board must have status GAME_IN_PROGRESS" using (outputBoardState.status == Status.GAME_IN_PROGRESS)
                 "You cannot play a game with yourself." using (outputBoardState.playerO != outputBoardState.playerX)
 
                 "Both parties together only may sign a StartGame transaction." using (command.signers == outputBoardState.participants.map { it.owningKey })
-                // TODO
+
+                // TODO: Only can play one game at a time? (Is this the right place to put this contraint?)
+
             }
 
             is Commands.SubmitTurn -> requireThat{
@@ -47,13 +53,32 @@ class BoardContract : Contract {
                 val inputBoardState = tx.inputStates.single() as BoardState
                 val outputBoardState = tx.outputStates.single() as BoardState
 
+                "Input board must have status GAME_IN_PROGRESS." using (inputBoardState.status == Status.GAME_IN_PROGRESS)
+                "Output board must have status GAME_IN_PROGRESS." using (outputBoardState.status == Status.GAME_IN_PROGRESS)
+
                 "It cannot be the same players turn both in the input board and the output board." using (inputBoardState.isPlayerXTurn xor outputBoardState.isPlayerXTurn)
 
                 val playerChar = if (inputBoardState.isPlayerXTurn) 'X' else 'O'
                 "Not valid board update." using BoardUtils.checkIfValidBoardUpdate(inputBoardState.board, outputBoardState.board, playerChar)
 
-                "Participants should not change" using (inputBoardState.participants == outputBoardState.participants)
+                "Participants should not change." using (inputBoardState.participants == outputBoardState.participants)
+            }
 
+            is Commands.GameOver -> requireThat{
+                "There should be one input state." using (tx.inputs.size == 1)
+                "There should be one output state." using (tx.outputs.size == 1)
+                "The input state should be of type BoardState." using (tx.inputStates.single() is BoardState)
+                "The output state should be of type BoardState." using (tx.outputStates.single() is BoardState)
+
+                val inputBoardState = tx.inputStates.single() as BoardState
+                val outputBoardState = tx.outputStates.single() as BoardState
+
+                "Input board must have status GAME_IN_PROGRESS." using (inputBoardState.status == Status.GAME_IN_PROGRESS)
+                "Output board must have status GAME_OVER." using (outputBoardState.status == Status.GAME_OVER)
+
+                "The board in the input BoardState and output BoardState should be the same" using checkForBoardEquality(inputBoardState.board, outputBoardState.board)
+
+                "Participants should not change." using (inputBoardState.participants == outputBoardState.participants)
             }
 
             is Commands.EndGame -> requireThat{
@@ -62,8 +87,8 @@ class BoardContract : Contract {
                 "The input state should be of type BoardState." using (tx.inputs[0].state.data is BoardState)
 
                 val inputBoardState = tx.inputStates.single() as BoardState
+                "Input board must have status GAME_OVER." using (inputBoardState.status == Status.GAME_OVER)
                 "The game must be over." using (BoardUtils.isGameOver(inputBoardState))
-
 
                 // TODO
             }
@@ -96,10 +121,8 @@ class BoardContract : Contract {
                 var numUpdates = 0
                 for (x in (0..2)) {
                     for (y in (0..2)) {
-
                         val inputVal = inputBoard[y][x]
                         val outputVal = outputBoard[y][x]
-
                         if (inputVal == 'E') { // Space on board was empty
                             if (outputVal != 'E') { // Space on board isn't empty anymore
                                 if (outputVal != playerChar) return false // Board was updated with the wrong players char
@@ -111,11 +134,13 @@ class BoardContract : Contract {
                         }
                     }
                 }
-
                 if (numUpdates != 1) return false // Board should only be updated in one place
                 return true
             }
 
+            fun checkForBoardEquality(inputBoard: Array<CharArray>, outputBoard: Array<CharArray>): Boolean {
+                return inputBoard.flatMap{ it.asList() } == outputBoard.flatMap { it.asList() }
+            }
 
             fun isGameOver(boardState: BoardState): Boolean {
 
@@ -158,15 +183,11 @@ class BoardContract : Contract {
                     }
                     if (xWin) return boardState.playerX
                 }
-
                 return null
             }
 
 
         }
     }
-
-
-
 
 }

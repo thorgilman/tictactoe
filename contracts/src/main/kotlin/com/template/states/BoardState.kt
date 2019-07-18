@@ -12,39 +12,50 @@ import kotlin.IllegalStateException
 // * State *
 // *********
 
+// TODO: include in BoardState or Board Contract
+// TODO: enums best practice here?
+
+@CordaSerializable
+enum class Status {
+    GAME_IN_PROGRESS, GAME_OVER
+}
+
 @BelongsToContract(BoardContract::class)
 @CordaSerializable
 data class BoardState(val playerO: Party,
                       val playerX: Party,
                       val isPlayerXTurn: Boolean = false,
                       val board: Array<CharArray> = Array(3, { charArrayOf('E', 'E', 'E')}),
+                      val status: Status = Status.GAME_IN_PROGRESS,
                       override val linearId: UniqueIdentifier = UniqueIdentifier()): LinearState {
 
     override val participants: List<AbstractParty> = listOf(playerO, playerX)
 
+    // Returns the party of the current player
     fun getCurrentPlayerParty(): Party { return if (isPlayerXTurn) playerX else playerO }
 
     // Get deep copy of board
     private fun Array<CharArray>.copy() = Array(size) { get(it).clone() }
 
+    // TODO: move to BoardContract?
+    // Returns a copy of a BoardState object after a move at Pair<x,y>
     fun returnNewBoardAfterMove(pos: Pair<Int,Int>): BoardState {
-
-        if (pos.first > 2 || pos.second > 2) throw IllegalStateException() // TODO ???
-
+        if (pos.first > 2 || pos.second > 2) throw IllegalStateException("Invalid board index.") // TODO ???
         val newBoard = board.copy()
         if (isPlayerXTurn) newBoard[pos.second][pos.first] = 'X'
         else newBoard[pos.second][pos.first] = 'O'
         return copy(board = newBoard, isPlayerXTurn = !isPlayerXTurn)
     }
 
+    // TODO: remove? (only for running from terminal)
+    // Prints the current board in the Terminal window
     fun printBoard() {
         println("  1 2 3")
         var i = 1
         for (charArray in board) {
-            print(i)
-            print(" ")
+            print("$i ")
             for (c in charArray) {
-                print(c + " ")
+                print("$c ")
             }
             println()
             i++

@@ -25,6 +25,8 @@ class StartGameFlow(val otherPlayerParty: Party) : FlowLogic<SignedTransaction>(
     @Suspendable
     override fun call(): SignedTransaction {
 
+        // TODO: Check if already has active game running here???
+
         val notary = serviceHub.networkMapCache.notaryIdentities.single()
         val command = Command(BoardContract.Commands.StartGame(), listOf(ourIdentity, otherPlayerParty).map { it.owningKey })
 
@@ -57,13 +59,13 @@ class StartGameFlowResponder(val counterpartySession: FlowSession) : FlowLogic<S
         val signedTransactionFlow = object : SignTransactionFlow(counterpartySession) {
             override fun checkTransaction(stx: SignedTransaction) = requireThat {
                 val output = stx.tx.outputs.single().data
-                // TODO
+
                 println("You will be PlayerX")
                 (output as BoardState).printBoard()
                 println("Wait for the other player...")
             }
         }
-        val txWeJustSignedId = subFlow(signedTransactionFlow)
-        return subFlow(ReceiveFinalityFlow(counterpartySession, txWeJustSignedId.id))
+        val txWeJustSigned = subFlow(signedTransactionFlow)
+        return subFlow(ReceiveFinalityFlow(counterpartySession, txWeJustSigned.id))
     }
 }

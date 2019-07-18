@@ -7,6 +7,7 @@ import net.corda.core.contracts.*
 import net.corda.core.contracts.Requirements.using
 import net.corda.core.flows.*
 import net.corda.core.identity.Party
+import net.corda.core.node.services.Vault
 import net.corda.core.node.services.queryBy
 import net.corda.core.node.services.vault.QueryCriteria
 import net.corda.core.transactions.SignedTransaction
@@ -18,18 +19,19 @@ import net.corda.core.utilities.ProgressTracker
 // *********
 @InitiatingFlow
 @StartableByRPC
-class EndGameFlow(val linearId: UniqueIdentifier) : FlowLogic<SignedTransaction>() {
+class EndGameFlow : FlowLogic<SignedTransaction>() {
 
     override val progressTracker = ProgressTracker()
 
     @Suspendable
     override fun call(): SignedTransaction {
 
-        println("GAME OVER")
+        //println("GAME OVER")
 
         val notary = serviceHub.networkMapCache.notaryIdentities.single()
 
-        val queryCriteria = QueryCriteria.LinearStateQueryCriteria(linearId = listOf(linearId))
+        //val queryCriteria = QueryCriteria.LinearStateQueryCriteria(linearId = listOf(linearId))
+        val queryCriteria = QueryCriteria.VaultQueryCriteria(Vault.StateStatus.UNCONSUMED)
         val boardStateRefToEnd = serviceHub.vaultService.queryBy<BoardState>(queryCriteria).states.single()
 
         val command = Command(BoardContract.Commands.EndGame(), boardStateRefToEnd.state.data.participants.map { it.owningKey })
@@ -57,7 +59,7 @@ class EndGameFlowResponder(val counterpartySession: FlowSession) : FlowLogic<Sig
         val signedTransactionFlow = object : SignTransactionFlow(counterpartySession) {
             override fun checkTransaction(stx: SignedTransaction) = requireThat {}
         }
-        val txWeJustSignedId = subFlow(signedTransactionFlow)
-        return subFlow(ReceiveFinalityFlow(counterpartySession, txWeJustSignedId.id))
+        val txWeJustSigned = subFlow(signedTransactionFlow)
+        return subFlow(ReceiveFinalityFlow(counterpartySession, txWeJustSigned.id))
     }
 }

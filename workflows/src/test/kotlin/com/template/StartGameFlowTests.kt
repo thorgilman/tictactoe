@@ -1,14 +1,12 @@
 package com.template
 
 import com.template.contracts.BoardContract
-import com.template.flows.Responder
 import com.template.flows.StartGameFlow
+import com.template.flows.StartGameFlowResponder
 import com.template.states.BoardState
-import net.corda.core.identity.CordaX500Name
 import net.corda.core.identity.Party
 import net.corda.core.transactions.SignedTransaction
 import net.corda.core.utilities.getOrThrow
-import net.corda.testing.core.TestIdentity
 import net.corda.testing.internal.chooseIdentityAndCert
 import net.corda.testing.node.MockNetwork
 import net.corda.testing.node.MockNetworkParameters
@@ -38,7 +36,7 @@ class StartGameFlowTests {
         partyA = nodeA.info.chooseIdentityAndCert().party
         partyB = nodeB.info.chooseIdentityAndCert().party
         listOf(nodeA, nodeB).forEach {
-            it.registerInitiatedFlow(Responder::class.java)
+            it.registerInitiatedFlow(StartGameFlowResponder::class.java)
         }
     }
 
@@ -62,7 +60,7 @@ class StartGameFlowTests {
     @Test
     fun flowReturnsTransactionSignedByBothParties() {
         val future = nodeA.startFlow(StartGameFlow(partyB))
-        mockNetwork.runNetwork() // ???
+        mockNetwork.runNetwork()
         val stx = future.getOrThrow()
         stx.verifyRequiredSignatures()
     }
@@ -70,7 +68,7 @@ class StartGameFlowTests {
     @Test
     fun flowRecordsTheSameTransactionInBothPartyVaults() {
         val future = nodeA.startFlow(StartGameFlow(partyB))
-        mockNetwork.runNetwork() // ???
+        mockNetwork.runNetwork()
         val stx = future.getOrThrow()
 
         listOf(nodeA, nodeB).map {
