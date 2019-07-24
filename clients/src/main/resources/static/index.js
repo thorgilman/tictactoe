@@ -15,34 +15,15 @@ function onLoad() {
 
 
 function setUpPopUpWindow() {
-      var modal = document.getElementById("popUpModel");
-      document.getElementsByClassName("closePopUp")[0].onclick = function() {
-
+    document.getElementsByClassName("closePopUp")[0].onclick = function() {
       clearBoard();
-      document.getElementById("chooseOpponentModel").style.display = "block";
-      modal.style.display = "none";
+      document.getElementById("popUpModel").style.display = "none";
     }
     window.onclick = function(event) {
       if (event.target == modal) {
-        modal.style.display = "none";
+        document.getElementById("popUpModel").style.display = "none";
       }
     }
-}
-
-
-function clearBoard() {
-    var buttons = document.getElementsByClassName("tic");
-    for (var i=0; i<buttons.length; i++) {
-        buttons[i].innerHTML = ' ';
-    }
-    myBoard = null;
-    document.getElementById("h1").innerHTML = "";
-    document.getElementById("h2").innerHTML = "";
-}
-
-function popUp(text) {
-    document.getElementById("popUpText").textContent = text;
-    document.getElementById("popUpModel").style.display = "block";
 }
 
 function setUpChooseOpponentWindow() {
@@ -85,6 +66,23 @@ function setUpChooseOpponentWindow() {
     });
 }
 
+
+function clearBoard() {
+    var buttons = document.getElementsByClassName("tic");
+    for (var i=0; i<buttons.length; i++) {
+        buttons[i].innerHTML = ' ';
+    }
+    myBoard = null;
+    document.getElementById("h1").innerHTML = "";
+    document.getElementById("h2").innerHTML = "";
+}
+
+function popUp(text) {
+    document.getElementById("popUpText").textContent = text;
+    document.getElementById("popUpModel").style.display = "block";
+}
+
+
 // Attempts to run StartGameFlow with party
 function eventStartGame(party) {
     axios.post('start-game', party, {headers: {'Content-Type': 'application/json'}})
@@ -105,16 +103,16 @@ function startUpdateCheck() {
 
         axios.get('get-board').then(function (result) {
 
-            if (typeof result.data !== 'string') { // Active game
-                // If there is a board update, call resetPage() to display it
+            var array = Array.from(result.data);
 
-                var array = Array.from(result.data);
-                //if (array.length == 0) break;
+            if (array.length == 0) { // no active game
+                // If no pop up is already being displayed, display the choose opponent window
+                if (document.getElementById("popUpModel").style.display == "none") document.getElementById("chooseOpponentModel").style.display = "block";
+            }
+            else { // active game
 
                 document.getElementById("chooseOpponentModel").style.display = "none";
-
                 if (myBoard == null) resetPage(); // if myBoard has never been set, call resetPage() to set it
-
 
                 for (var i=0; i<array.length; i++) {
                     if (array[i] != myBoard[i]) { // check for board update
@@ -122,32 +120,6 @@ function startUpdateCheck() {
                         myBoard = array;
                     }
                 }
-            }
-            else if (document.getElementById("popUpModel").style.display != "block" && document.getElementById("chooseOpponentModel").style.display != "block") { // Game over
-
-                // TODO: display last board state
-                // One of the players has detected that the game is over
-
-                // Get the winner and display it
-                axios.get('get-winner-text').then(function (result) {
-                    popUp(result.data);
-                })
-
-                // Run EndGameFlow in 2 seconds to mark the BoardState as consumed
-                // We wait 2 seconds so the other party is able to also detect that there is a winner and display that message before the BoardState is removed
-                function runEndGameFlow() {
-                    setTimeout(function() {
-                        axios.post('end-game', {headers: {'Content-Type': 'application/json'}})
-                        .then(response => {
-                            console.log(response);
-                        })
-                        .catch(error => {
-                            console.log(error.response);
-                        });
-
-                    }, 2000);
-                }
-                runEndGameFlow();
             }
 
         })
@@ -159,7 +131,7 @@ function startUpdateCheck() {
     check();
 }
 
-// Resets the page to display board updates
+// Resets the page to display any type of board updates
 function resetPage() {
     setIdentityLabel();
     setIsMyTurnLabel();
@@ -172,6 +144,41 @@ function resetPage() {
         }
         myBoard = array;
     });
+    checkForGameOver();
+}
+
+// Checks if the game is over, if it is then display the winner and run EndGameFlow in two seconds
+function checkForGameOver() {
+
+    axios.get('get-is-game-over').then(function (result) {
+        var isGameOver = Boolean(result.data);
+
+        if (isGameOver) {
+
+            // Get the winner and display it
+            axios.get('get-winner-text').then(function (result) {
+                popUp(result.data);
+            })
+
+            // Run EndGameFlow in 2 seconds to mark the BoardState as consumed
+            // We wait 2 seconds so the other party is able to also detect that there is a winner and display that message before the BoardState is removed
+            function runEndGameFlow() {
+                setTimeout(function() {
+                    axios.post('end-game', {headers: {'Content-Type': 'application/json'}})
+                    .then(response => {
+                        console.log(response);
+                    })
+                    .catch(error => {
+                        console.log(error.response);
+                    });
+
+                }, 2000);
+            }
+            runEndGameFlow();
+
+        }
+    })
+
 }
 
 function setIsMyTurnLabel() {
@@ -194,7 +201,7 @@ function setIdentityLabel() {
     })
 }
 
-// Attempt to run SubmitTurnFlow with index i
+// Attempts to execute a SubmitTurnFlow on the space that corresponds with index i
 function eventSubmitTurn(i) {
     axios.post('submit-turn', i, {headers: {'Content-Type': 'application/json'}})
     .then(response => {

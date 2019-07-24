@@ -1,6 +1,5 @@
 package com.template.contracts
 
-import com.template.contracts.BoardContract.BoardUtils.Companion.checkForBoardEquality
 import com.template.states.BoardState
 import com.template.states.Status
 import net.corda.core.contracts.CommandData
@@ -19,7 +18,6 @@ class BoardContract : Contract {
     interface Commands : CommandData {
         class StartGame : Commands
         class SubmitTurn : Commands
-        class GameOver: Commands
         class EndGame : Commands
     }
 
@@ -52,7 +50,7 @@ class BoardContract : Contract {
                 val outputBoardState = tx.outputStates.single() as BoardState
 
                 "Input board must have status GAME_IN_PROGRESS." using (inputBoardState.status == Status.GAME_IN_PROGRESS)
-                "Output board must have status GAME_IN_PROGRESS." using (outputBoardState.status == Status.GAME_IN_PROGRESS)
+                //"Output board must have status GAME_IN_PROGRESS." using (outputBoardState.status == Status.GAME_IN_PROGRESS)
 
                 "It cannot be the same players turn both in the input board and the output board." using (inputBoardState.isPlayerXTurn xor outputBoardState.isPlayerXTurn)
 
@@ -61,24 +59,6 @@ class BoardContract : Contract {
 
                 "Participants should not change." using (inputBoardState.participants == outputBoardState.participants)
             }
-
-            is Commands.GameOver -> requireThat{
-                "There should be one input state." using (tx.inputs.size == 1)
-                "There should be one output state." using (tx.outputs.size == 1)
-                "The input state should be of type BoardState." using (tx.inputStates.single() is BoardState)
-                "The output state should be of type BoardState." using (tx.outputStates.single() is BoardState)
-
-                val inputBoardState = tx.inputStates.single() as BoardState
-                val outputBoardState = tx.outputStates.single() as BoardState
-
-                "Input board must have status GAME_IN_PROGRESS." using (inputBoardState.status == Status.GAME_IN_PROGRESS)
-                "Output board must have status GAME_OVER." using (outputBoardState.status == Status.GAME_OVER)
-
-                "The board in the input BoardState and output BoardState should be the same" using checkForBoardEquality(inputBoardState.board, outputBoardState.board)
-
-                "Participants should not change." using (inputBoardState.participants == outputBoardState.participants)
-            }
-
             is Commands.EndGame -> requireThat{
                 "There should be one input state." using (tx.inputs.size == 1)
                 "There should be no output state." using (tx.outputs.isEmpty())
@@ -88,7 +68,6 @@ class BoardContract : Contract {
                 "Input board must have status GAME_OVER." using (inputBoardState.status == Status.GAME_OVER)
                 "The game must be over." using (BoardUtils.isGameOver(inputBoardState))
 
-                // TODO
             }
 
         }
@@ -136,54 +115,44 @@ class BoardContract : Contract {
                 return true
             }
 
-            fun checkForBoardEquality(inputBoard: Array<CharArray>, outputBoard: Array<CharArray>): Boolean {
-                return inputBoard.flatMap{ it.asList() } == outputBoard.flatMap { it.asList() }
-            }
 
             fun isGameOver(boardState: BoardState): Boolean {
-
                 val board: Array<CharArray> = boardState.board
                 if (board.flatMap{ it.asList() }.indexOf('E') == -1) return true
 
                 for (potentialWin in potentialWins) {
-                    var gameOver = true
-                    for ((x,y) in potentialWin) {
-                        if (board[x][y] != 'O') gameOver = false
-                    }
-                    if (gameOver) return true
-                }
-                for (potentialWin in potentialWins) {
-                    var gameOver = true
-                    for ((x,y) in potentialWin) {
-                        if (board[x][y] != 'X') gameOver = false
-                    }
-                    if (gameOver) return true
+                    val c = potentialWin.map { (x,y) -> board[x][y] }.distinct().singleOrNull()
+                    if (c != null && (c == 'O' || c == 'X')) return true
                 }
                 return false
             }
 
             fun getWinner(boardState: BoardState): Party? {
-
                 val board: Array<CharArray> = boardState.board
                 if (board.flatMap { it.asList() }.indexOf('E') == -1) return null
 
                 for (potentialWin in potentialWins) {
-                    var oWin = true
-                    for ((x,y) in potentialWin) {
-                        if (board[x][y] != 'O') oWin = false
-                    }
-                    if (oWin) return boardState.playerO
-                }
-                for (potentialWin in potentialWins) {
-                    var xWin = true
-                    for ((x,y) in potentialWin) {
-                        if (board[x][y] != 'X') xWin = false
-                    }
-                    if (xWin) return boardState.playerX
+                    val c = potentialWin.map { (x,y) -> board[x][y] }.distinct().singleOrNull()
+                    if (c == null) continue
+                    if (c == 'O') return boardState.playerO
+                    if (c == 'X') return boardState.playerX
                 }
                 return null
             }
 
+
+            fun printBoard(boardState: BoardState) {
+                println("  1 2 3")
+                var i = 1
+                for (charArray in boardState.board) {
+                    print("$i ")
+                    for (c in charArray) {
+                        print("$c ")
+                    }
+                    println()
+                    i++
+                }
+            }
 
         }
     }

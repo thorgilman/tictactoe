@@ -34,28 +34,17 @@ data class BoardState(val playerO: Party,
     // Get deep copy of board
     private fun Array<CharArray>.copy() = Array(size) { get(it).clone() }
 
+    // TODO: Also move to BoardContract?
     // Returns a copy of a BoardState object after a move at Pair<x,y>
     fun returnNewBoardAfterMove(pos: Pair<Int,Int>): BoardState {
         if (pos.first > 2 || pos.second > 2) throw IllegalStateException("Invalid board index.")
         val newBoard = board.copy()
         if (isPlayerXTurn) newBoard[pos.second][pos.first] = 'X'
         else newBoard[pos.second][pos.first] = 'O'
-        return copy(board = newBoard, isPlayerXTurn = !isPlayerXTurn)
-    }
 
-    // TODO: remove? (only for running from terminal)
-    // Prints the current board in the Terminal window
-    fun printBoard() {
-        println("  1 2 3")
-        var i = 1
-        for (charArray in board) {
-            print("$i ")
-            for (c in charArray) {
-                print("$c ")
-            }
-            println()
-            i++
-        }
+        val newBoardState = copy(board = newBoard, isPlayerXTurn = !isPlayerXTurn)
+        if (BoardContract.BoardUtils.isGameOver(newBoardState)) return newBoardState.copy(status = Status.GAME_OVER)
+        return newBoardState
     }
 
 }

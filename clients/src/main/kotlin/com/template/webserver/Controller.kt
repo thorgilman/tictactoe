@@ -98,10 +98,17 @@ class Controller(rpc: NodeRPCConnection) {
     @GetMapping(value = ["get-board"])
     private fun getBoard(): List<Char>? {
         val states = proxy.vaultQueryBy<BoardState>().states
-        //if (states.size != 1) return listOf()
+        if (states.isEmpty()) return emptyList()
         val boardState = states.single().state.data
-        if (boardState.status == Status.GAME_OVER) return null
-        else return boardState.board.flatMap { it.asList() }
+        //if (boardState.status == Status.GAME_OVER) return null
+        return boardState.board.flatMap { it.asList() }
+    }
+
+    @GetMapping(value = ["get-is-game-over"])
+    private fun getIsGameOver(): Boolean {
+        val states = proxy.vaultQueryBy<BoardState>().states
+        if (states.single().state.data.status == Status.GAME_OVER) return true
+        return false
     }
 
 

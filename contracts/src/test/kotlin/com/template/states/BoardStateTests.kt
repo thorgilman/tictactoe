@@ -1,5 +1,6 @@
 package com.template.states
 
+import com.template.contracts.BoardContract
 import net.corda.core.contracts.UniqueIdentifier
 import net.corda.core.identity.CordaX500Name
 import net.corda.core.identity.Party
@@ -115,6 +116,29 @@ class BoardStateTests {
         assert(boardState3.board[0][1] == 'X')
         assert(!boardState3.isPlayerXTurn)
     }
+
+
+    @Test
+    fun checkIsGameOverMethod() {
+        val partyA = TestIdentity(CordaX500Name("PartyA","London","GB")).party
+        val partyB = TestIdentity(CordaX500Name("PartyB","New York","US")).party
+
+        var boardState = BoardState(partyA, partyB)
+        assert(!BoardContract.BoardUtils.isGameOver(boardState))
+        boardState = boardState.returnNewBoardAfterMove(Pair(0,0))
+        boardState = boardState.returnNewBoardAfterMove(Pair(1,0))
+        assert(!BoardContract.BoardUtils.isGameOver(boardState))
+        boardState = boardState.returnNewBoardAfterMove(Pair(0,1))
+        assert(!BoardContract.BoardUtils.isGameOver(boardState))
+        boardState = boardState.returnNewBoardAfterMove(Pair(1,1))
+        assert(!BoardContract.BoardUtils.isGameOver(boardState))
+        boardState = boardState.returnNewBoardAfterMove(Pair(0,2))
+
+        assert(BoardContract.BoardUtils.isGameOver(boardState))
+        assert(BoardContract.BoardUtils.getWinner(boardState)!! == partyA)
+    }
+
+
 
 }
 

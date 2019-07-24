@@ -21,12 +21,11 @@ import net.corda.core.utilities.ProgressTracker
 @StartableByRPC
 class EndGameFlow : FlowLogic<SignedTransaction>() {
 
+    // TODO: progressTracker
     override val progressTracker = ProgressTracker()
 
     @Suspendable
     override fun call(): SignedTransaction {
-
-        //println("GAME OVER")
 
         val notary = serviceHub.networkMapCache.notaryIdentities.single()
 
@@ -55,7 +54,6 @@ class EndGameFlowResponder(val counterpartySession: FlowSession) : FlowLogic<Sig
 
     @Suspendable
     override fun call(): SignedTransaction {
-
         val signedTransactionFlow = object : SignTransactionFlow(counterpartySession) {
             override fun checkTransaction(stx: SignedTransaction) = requireThat {}
         }
