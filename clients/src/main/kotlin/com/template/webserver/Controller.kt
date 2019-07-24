@@ -50,12 +50,6 @@ class Controller(rpc: NodeRPCConnection) {
     @GetMapping(value = ["my-turn"])
     private fun myTurn(): Boolean = proxy.vaultQueryBy<BoardState>().states.single().state.data.getCurrentPlayerParty().name == proxy.nodeInfo().legalIdentities.single().name
 
-    @GetMapping(value = ["nodes"])
-    private fun nodes(): List<String> {
-        val nodesList = proxy.networkMapSnapshot() - proxy.nodeInfo() - proxy.nodeInfoFromParty(proxy.notaryIdentities().single())!!
-        return nodesList.map { it.legalIdentitiesAndCerts.single().name.toString() }
-    }
-
     @GetMapping(value = ["my-board"], produces = ["text/plain"])
     private fun myBoard(): String {
         val boardState = proxy.vaultQueryBy<BoardState>().states.single().state.data
@@ -73,8 +67,14 @@ class Controller(rpc: NodeRPCConnection) {
         return str
     }
 
-    @GetMapping(value = ["you-are"], produces = ["text/plain"])
-    private fun youAre(): String {
+    @GetMapping(value = ["get-nodes"])
+    private fun getNodes(): List<String> {
+        val nodesList = proxy.networkMapSnapshot() - proxy.nodeInfo() - proxy.nodeInfoFromParty(proxy.notaryIdentities().single())!!
+        return nodesList.map { it.legalIdentitiesAndCerts.single().name.toString() }
+    }
+
+    @GetMapping(value = ["get-you-are-text"], produces = ["text/plain"])
+    private fun getYouAreText(): String {
         val boardState = proxy.vaultQueryBy<BoardState>().states.single().state.data
         if (boardState.playerO == proxy.nodeInfo().legalIdentities.single()) return "You are Player O"
         else if (boardState.playerX == proxy.nodeInfo().legalIdentities.single()) return "You are Player X"
@@ -95,9 +95,11 @@ class Controller(rpc: NodeRPCConnection) {
         }
     }
 
-    @GetMapping(value = ["board"])
-    private fun board(): List<Char>? {
-        val boardState = proxy.vaultQueryBy<BoardState>().states.single().state.data
+    @GetMapping(value = ["get-board"])
+    private fun getBoard(): List<Char>? {
+        val states = proxy.vaultQueryBy<BoardState>().states
+        //if (states.size != 1) return listOf()
+        val boardState = states.single().state.data
         if (boardState.status == Status.GAME_OVER) return null
         else return boardState.board.flatMap { it.asList() }
     }
@@ -152,7 +154,7 @@ class Controller(rpc: NodeRPCConnection) {
         }
     }
 
-    fun InputStream.readTextAndClose(charset: Charset = Charsets.UTF_8): String {
+    private fun InputStream.readTextAndClose(charset: Charset = Charsets.UTF_8): String {
         return this.bufferedReader(charset).use { it.readText() }
     }
 

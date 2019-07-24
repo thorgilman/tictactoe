@@ -12,9 +12,6 @@ import kotlin.IllegalStateException
 // * State *
 // *********
 
-// TODO: include in BoardState or Board Contract
-// TODO: enums best practice here?
-
 @CordaSerializable
 enum class Status {
     GAME_IN_PROGRESS, GAME_OVER
@@ -37,10 +34,9 @@ data class BoardState(val playerO: Party,
     // Get deep copy of board
     private fun Array<CharArray>.copy() = Array(size) { get(it).clone() }
 
-    // TODO: move to BoardContract?
     // Returns a copy of a BoardState object after a move at Pair<x,y>
     fun returnNewBoardAfterMove(pos: Pair<Int,Int>): BoardState {
-        if (pos.first > 2 || pos.second > 2) throw IllegalStateException("Invalid board index.") // TODO ???
+        if (pos.first > 2 || pos.second > 2) throw IllegalStateException("Invalid board index.")
         val newBoard = board.copy()
         if (isPlayerXTurn) newBoard[pos.second][pos.first] = 'X'
         else newBoard[pos.second][pos.first] = 'O'

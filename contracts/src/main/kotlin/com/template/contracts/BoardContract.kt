@@ -40,8 +40,6 @@ class BoardContract : Contract {
 
                 "Both parties together only may sign a StartGame transaction." using (command.signers == outputBoardState.participants.map { it.owningKey })
 
-                // TODO: Only can play one game at a time? (Is this the right place to put this contraint?)
-
             }
 
             is Commands.SubmitTurn -> requireThat{

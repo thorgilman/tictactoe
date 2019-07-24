@@ -67,7 +67,7 @@ class SubmitTurnFlow(private val x: Int, private val y: Int) : FlowLogic<SignedT
         val tx = subFlow(FinalityFlow(stx, session))
 
         // TODO TODO TODO
-        // Return this tx if isGameOver?
+        //
         if (BoardContract.BoardUtils.isGameOver(outputBoardState)) subFlow(GameOverFlow(outputBoardState.linearId))
 
         return tx
