@@ -36,7 +36,7 @@ class Controller(rpc: NodeRPCConnection) {
     @GetMapping(value = ["get-nodes"])
     private fun getNodes(): List<String> {
         val nodesList = proxy.networkMapSnapshot() - proxy.nodeInfo() - proxy.nodeInfoFromParty(proxy.notaryIdentities().single())!!
-        return nodesList.map { it.legalIdentitiesAndCerts.single().name.toString() }
+        return nodesList.map {  it.legalIdentitiesAndCerts.single().name.toString() }
     }
 
     @GetMapping(value = ["get-you-are-text"], produces = ["text/plain"])
