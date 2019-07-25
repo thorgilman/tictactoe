@@ -14,9 +14,6 @@ import net.corda.core.transactions.SignedTransaction
 import net.corda.core.transactions.TransactionBuilder
 import net.corda.core.utilities.ProgressTracker
 
-// *********
-// * Flows *
-// *********
 @InitiatingFlow
 @StartableByRPC
 class EndGameFlow : FlowLogic<SignedTransaction>() {

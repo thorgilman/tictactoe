@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <title>Tic Tac Toe</title>
     <link rel="stylesheet" href="index.css">
-
 </head>
 <body>
 
@@ -21,7 +20,12 @@
 
 <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
 
-<div class="text-center"id="box">
+<div id="divLogo">
+    <img src="corda_logo.png", id="cordaLogo"/>
+    <p id="tictactoeTextHeader">Tic-Tac-Toe</p>
+</div>
+
+<div class="text-center", id="box">
     <header>
         <h1 id="h1"></h1>
     </header>
@@ -29,7 +33,7 @@
         <h1 id="h2"></h1>
     </header>
     <ul id="gameBoard">
-        <li class="tic"id="0"></li>
+        <li class="tic"id="0"><span></span></li>
         <li class="tic"id="1"></li>
         <li class="tic"id="2"></li>
         <li class="tic"id="3"></li>
@@ -44,24 +48,22 @@
 <div id="popUpModel" class="modal" style="display: none;">
     <div class="modal-content">
         <span class="closePopUp">&times;</span>
-        <p id="popUpText" ></p>
+        <p id="popUpText"></p>
     </div>
 </div>
 
-
 <div id="chooseOpponentModel" class="modal" style="display: none;">
     <div class="modal-content">
-        <span class="closeOpponentWindow">&times;</span>
+        <span class="closeOpponentWindow">&times</span>
         <p id="chooseOpponentText" ></p>
-        <label for="options">Choose your opponent!</label><br>
+        <label for="options">Choose your opponent!</label>
+        <br>
         <select id="options" name="nodes"></select>
         <br>
         <button name="startGameButton" id="startGameButtonId">Start Game</button>
         <p id="output"></p>
-
     </div>
 </div>
-
 
 <script type="text/javascript" src="index.js"></script>
 

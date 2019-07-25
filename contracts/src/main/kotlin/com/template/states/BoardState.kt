@@ -8,10 +8,6 @@ import net.corda.core.schemas.QueryableState
 import net.corda.core.serialization.CordaSerializable
 import kotlin.IllegalStateException
 
-// *********
-// * State *
-// *********
-
 @CordaSerializable
 enum class Status {
     GAME_IN_PROGRESS, GAME_OVER

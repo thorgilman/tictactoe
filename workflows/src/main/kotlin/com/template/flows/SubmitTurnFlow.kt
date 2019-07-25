@@ -19,10 +19,6 @@ import net.corda.core.transactions.SignedTransaction
 import net.corda.core.transactions.TransactionBuilder
 import net.corda.core.utilities.ProgressTracker
 
-// *********
-// * Flows *
-// *********
-
 @InitiatingFlow
 @StartableByRPC
 class SubmitTurnFlow(private val x: Int, private val y: Int) : FlowLogic<SignedTransaction>() {
@@ -57,10 +53,7 @@ class SubmitTurnFlow(private val x: Int, private val y: Int) : FlowLogic<SignedT
         val ptx = serviceHub.signInitialTransaction(txBuilder)
         val session = initiateFlow(opponentParty)
         val stx = subFlow(CollectSignaturesFlow(ptx, listOf(session)))
-        val tx = subFlow(FinalityFlow(stx, session))
-
-
-        return tx
+        return subFlow(FinalityFlow(stx, session))
     }
 }
 

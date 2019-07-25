@@ -126,7 +126,7 @@ function startUpdateCheck() {
         .catch(error => {
             // TODO
         });
-        setTimeout(check, 2000); // check again in 2 seconds
+        setTimeout(check, 1000); // check again in 2 seconds
     }
     check();
 }
@@ -172,7 +172,7 @@ function checkForGameOver() {
                         console.log(error.response);
                     });
 
-                }, 2000);
+                }, 1000);
             }
             runEndGameFlow();
 
@@ -182,7 +182,7 @@ function checkForGameOver() {
 }
 
 function setIsMyTurnLabel() {
-    axios.get('my-turn').then(function (result) {
+    axios.get('get-my-turn').then(function (result) {
         var isMyTurn = Boolean(result.data);
         if (isMyTurn) document.getElementById("h2").innerHTML = "It's your turn!";
         else document.getElementById("h2").innerHTML = "Wait for your turn...";

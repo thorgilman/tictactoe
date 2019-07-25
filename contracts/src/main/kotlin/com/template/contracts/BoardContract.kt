@@ -6,7 +6,6 @@ import net.corda.core.contracts.CommandData
 import net.corda.core.contracts.Contract
 import net.corda.core.contracts.requireSingleCommand
 import net.corda.core.contracts.requireThat
-import net.corda.core.identity.CordaX500Name
 import net.corda.core.identity.Party
 import net.corda.core.transactions.LedgerTransaction
 
@@ -24,7 +23,6 @@ class BoardContract : Contract {
     override fun verify(tx: LedgerTransaction) {
 
         val command = tx.commands.requireSingleCommand<Commands>()
-
         when(command.value) {
 
             is Commands.StartGame -> requireThat{
@@ -35,9 +33,7 @@ class BoardContract : Contract {
                 val outputBoardState = tx.outputStates[0] as BoardState
                 "Output board must have status GAME_IN_PROGRESS" using (outputBoardState.status == Status.GAME_IN_PROGRESS)
                 "You cannot play a game with yourself." using (outputBoardState.playerO != outputBoardState.playerX)
-
                 "Both parties together only may sign a StartGame transaction." using (command.signers == outputBoardState.participants.map { it.owningKey })
-
             }
 
             is Commands.SubmitTurn -> requireThat{
@@ -48,16 +44,12 @@ class BoardContract : Contract {
 
                 val inputBoardState = tx.inputStates.single() as BoardState
                 val outputBoardState = tx.outputStates.single() as BoardState
-
                 "Input board must have status GAME_IN_PROGRESS." using (inputBoardState.status == Status.GAME_IN_PROGRESS)
-                //"Output board must have status GAME_IN_PROGRESS." using (outputBoardState.status == Status.GAME_IN_PROGRESS)
-
+                "Participants should not change." using (inputBoardState.participants == outputBoardState.participants)
                 "It cannot be the same players turn both in the input board and the output board." using (inputBoardState.isPlayerXTurn xor outputBoardState.isPlayerXTurn)
 
                 val playerChar = if (inputBoardState.isPlayerXTurn) 'X' else 'O'
                 "Not valid board update." using BoardUtils.checkIfValidBoardUpdate(inputBoardState.board, outputBoardState.board, playerChar)
-
-                "Participants should not change." using (inputBoardState.participants == outputBoardState.participants)
             }
             is Commands.EndGame -> requireThat{
                 "There should be one input state." using (tx.inputs.size == 1)
@@ -67,9 +59,7 @@ class BoardContract : Contract {
                 val inputBoardState = tx.inputStates.single() as BoardState
                 "Input board must have status GAME_OVER." using (inputBoardState.status == Status.GAME_OVER)
                 "The game must be over." using (BoardUtils.isGameOver(inputBoardState))
-
             }
-
         }
     }
 
@@ -94,7 +84,6 @@ class BoardContract : Contract {
             )
 
             fun checkIfValidBoardUpdate(inputBoard: Array<CharArray>, outputBoard: Array<CharArray>, playerChar: Char): Boolean {
-
                 var numUpdates = 0
                 for (x in (0..2)) {
                     for (y in (0..2)) {
@@ -114,7 +103,6 @@ class BoardContract : Contract {
                 if (numUpdates != 1) return false // Board should only be updated in one place
                 return true
             }
-
 
             fun isGameOver(boardState: BoardState): Boolean {
                 val board: Array<CharArray> = boardState.board
@@ -140,21 +128,6 @@ class BoardContract : Contract {
                 return null
             }
 
-
-            fun printBoard(boardState: BoardState) {
-                println("  1 2 3")
-                var i = 1
-                for (charArray in boardState.board) {
-                    print("$i ")
-                    for (c in charArray) {
-                        print("$c ")
-                    }
-                    println()
-                    i++
-                }
-            }
-
         }
     }
-
 }

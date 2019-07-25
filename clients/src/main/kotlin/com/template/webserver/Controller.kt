@@ -6,35 +6,21 @@ import com.template.flows.StartGameFlow
 import com.template.flows.SubmitTurnFlow
 import com.template.states.BoardState
 import com.template.states.Status
-import net.corda.core.crypto.internal.providerMap
-import net.corda.core.identity.CordaX500Name
 import net.corda.core.identity.CordaX500Name.Companion.parse
-import net.corda.core.identity.Party
-import net.corda.core.messaging.CordaRPCOps
-import net.corda.core.messaging.startFlow
 import net.corda.core.messaging.startTrackedFlow
 import net.corda.core.messaging.vaultQueryBy
-import net.corda.core.node.NodeInfo
 import net.corda.core.utilities.getOrThrow
-import net.corda.nodeapi.internal.config.toConfigValue
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
-import org.springframework.http.MediaType
-import org.springframework.http.MediaType.TEXT_HTML
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
-import sun.misc.IOUtils
 import java.io.InputStream
 import java.nio.charset.Charset
 import javax.servlet.http.HttpServletRequest
-import javax.xml.soap.Node
 
-/**
- * Define your API endpoints here.
- */
 @RestController
 @RequestMapping("/") // The paths for HTTP requests are relative to this base path.
 class Controller(rpc: NodeRPCConnection) {
@@ -44,28 +30,8 @@ class Controller(rpc: NodeRPCConnection) {
     }
     private val proxy = rpc.proxy
 
-    @GetMapping(value = ["me"], produces = ["text/plain"])
-    private fun me() = proxy.nodeInfo().legalIdentities.single().name.toString()
-
-    @GetMapping(value = ["my-turn"])
-    private fun myTurn(): Boolean = proxy.vaultQueryBy<BoardState>().states.single().state.data.getCurrentPlayerParty().name == proxy.nodeInfo().legalIdentities.single().name
-
-    @GetMapping(value = ["my-board"], produces = ["text/plain"])
-    private fun myBoard(): String {
-        val boardState = proxy.vaultQueryBy<BoardState>().states.single().state.data
-        var str = ""
-        if (boardState.playerO == proxy.nodeInfo().legalIdentities.single()) str += "You are Player O\n"
-        else if (boardState.playerX == proxy.nodeInfo().legalIdentities.single()) str += "You are Player X\n"
-        for (charArray in boardState.board) {
-            for (c in charArray) {
-                str += (c + " ")
-            }
-            str += "\n"
-        }
-        if (boardState.getCurrentPlayerParty() == proxy.nodeInfo().legalIdentities.single()) str += "It's your turn!\n"
-        else str += "It's not your turn!\n"
-        return str
-    }
+    @GetMapping(value = ["get-my-turn"])
+    private fun getMyTurn(): Boolean = proxy.vaultQueryBy<BoardState>().states.single().state.data.getCurrentPlayerParty().name == proxy.nodeInfo().legalIdentities.single().name
 
     @GetMapping(value = ["get-nodes"])
     private fun getNodes(): List<String> {
@@ -81,6 +47,31 @@ class Controller(rpc: NodeRPCConnection) {
         return "Error determining player"
     }
 
+    @GetMapping(value = ["get-board"])
+    private fun getBoard(): List<Char>? {
+        val states = proxy.vaultQueryBy<BoardState>().states
+        if (states.isEmpty()) return emptyList()
+        val boardState = states.single().state.data
+        return boardState.board.flatMap { it.asList() }
+    }
+
+    @GetMapping(value = ["get-is-game-over"])
+    private fun getIsGameOver(): Boolean {
+        val states = proxy.vaultQueryBy<BoardState>().states
+        if (states.single().state.data.status == Status.GAME_OVER) return true
+        return false
+    }
+
+    @GetMapping(value = ["get-winner-text"])
+    private fun getWinnerText(): String {
+        val boardState = proxy.vaultQueryBy<BoardState>().states.single().state.data
+        val winningParty = BoardContract.BoardUtils.getWinner(boardState)
+        if (winningParty == null) return "No winner!"
+        val myParty = proxy.nodeInfo().legalIdentities.single()
+        if (myParty == winningParty) return "You win!"
+        return "You loose!"
+    }
+
     @PostMapping(value = ["start-game"], headers = ["Content-Type=application/json"])
     fun startGame(request: HttpServletRequest): ResponseEntity<String> {
         val cordaX500NameString = request.inputStream.readTextAndClose()
@@ -94,35 +85,6 @@ class Controller(rpc: NodeRPCConnection) {
             ResponseEntity.badRequest().body(ex.message!!)
         }
     }
-
-    @GetMapping(value = ["get-board"])
-    private fun getBoard(): List<Char>? {
-        val states = proxy.vaultQueryBy<BoardState>().states
-        if (states.isEmpty()) return emptyList()
-        val boardState = states.single().state.data
-        //if (boardState.status == Status.GAME_OVER) return null
-        return boardState.board.flatMap { it.asList() }
-    }
-
-    @GetMapping(value = ["get-is-game-over"])
-    private fun getIsGameOver(): Boolean {
-        val states = proxy.vaultQueryBy<BoardState>().states
-        if (states.single().state.data.status == Status.GAME_OVER) return true
-        return false
-    }
-
-
-    @GetMapping(value = ["get-winner-text"])
-    private fun getWinnerText(): String {
-        val boardState = proxy.vaultQueryBy<BoardState>().states.single().state.data
-        val winningParty = BoardContract.BoardUtils.getWinner(boardState)
-        if (winningParty == null) return "No winner!"
-
-        val myParty = proxy.nodeInfo().legalIdentities.single()
-        if (myParty == winningParty) return "You win!"
-        return "You loose!"
-    }
-
 
     @PostMapping(value = ["submit-turn"], headers = ["Content-Type=application/json"])
     fun submitTurn(request: HttpServletRequest): ResponseEntity<String> {
@@ -156,7 +118,7 @@ class Controller(rpc: NodeRPCConnection) {
             val signedTx = proxy.startTrackedFlow(::EndGameFlow).returnValue.getOrThrow()
             ResponseEntity.status(HttpStatus.CREATED).body("Transaction id ${signedTx.id} committed to ledger.\n")
         } catch (ex: Throwable) {
-            logger.error(ex.message, ex)
+            //logger.error(ex.message, ex)
             ResponseEntity.badRequest().body(ex.message!!)
         }
     }
