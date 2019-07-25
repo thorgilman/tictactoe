@@ -30,7 +30,6 @@ class BoardContractStartGameTests {
         publicKeys = boardState.participants.map {it.owningKey}
     }
 
-
     @Test
     fun mustIncludeStartGameCommand() {
         ledgerServices.ledger {
@@ -110,17 +109,17 @@ class BoardContractStartGameTests {
             transaction {
                 command(partyA.owningKey, BoardContract.Commands.StartGame())
                 output(BoardContract.ID, boardState)
-                this `fails with` "Both parties together only may sign a StartGame transaction."
+                this `fails with` "Both participants must sign a StartGame transaction."
             }
             transaction {
                 command(partyC.owningKey, BoardContract.Commands.StartGame())
                 output(BoardContract.ID, boardState)
-                this `fails with` "Both parties together only may sign a StartGame transaction."
+                this `fails with` "Both participants must sign a StartGame transaction."
             }
             transaction {
                 command(listOf(partyC.owningKey, partyA.owningKey, partyB.owningKey), BoardContract.Commands.StartGame())
                 output(BoardContract.ID, boardState)
-                this `fails with` "Both parties together only may sign a StartGame transaction."
+                this `fails with` "Both participants must sign a StartGame transaction."
             }
         }
     }

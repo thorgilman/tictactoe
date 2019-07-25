@@ -59,4 +59,36 @@ class BoardContractEndGameTests {
     }
 
 
+    @Test
+    fun bothPlayersMustSignEndGameTransaction() {
+        val partyC = TestIdentity(CordaX500Name("PartyC","New York","US")).party
+        ledgerServices.ledger {
+            transaction {
+                command(listOf(partyA.owningKey, partyB.owningKey), BoardContract.Commands.EndGame())
+                input(BoardContract.ID, boardState)
+                output(BoardContract.ID, boardState.returnNewBoardAfterMove(Pair(0,0)))
+                this.verifies()
+            }
+            transaction {
+                command(partyA.owningKey, BoardContract.Commands.EndGame())
+                input(BoardContract.ID, boardState)
+                output(BoardContract.ID, boardState.returnNewBoardAfterMove(Pair(0,0)))
+                this `fails with` "Both participants must sign a EndGame transaction."
+            }
+            transaction {
+                command(partyC.owningKey, BoardContract.Commands.EndGame())
+                input(BoardContract.ID, boardState)
+                output(BoardContract.ID, boardState.returnNewBoardAfterMove(Pair(0,0)))
+                this `fails with` "Both participants must sign a EndGame transaction."
+            }
+            transaction {
+                command(listOf(partyC.owningKey, partyA.owningKey, partyB.owningKey), BoardContract.Commands.EndGame())
+                input(BoardContract.ID, boardState)
+                output(BoardContract.ID, boardState.returnNewBoardAfterMove(Pair(0,0)))
+                this `fails with` "Both participants must sign a EndGame transaction."
+            }
+        }
+    }
+
+
 }

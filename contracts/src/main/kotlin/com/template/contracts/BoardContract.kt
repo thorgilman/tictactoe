@@ -26,39 +26,56 @@ class BoardContract : Contract {
         when(command.value) {
 
             is Commands.StartGame -> requireThat{
+                // Shape
                 "There should be no input state." using (tx.inputs.isEmpty())
                 "There should be one output state." using (tx.outputs.size == 1)
                 "The output state should be of type BoardState." using (tx.outputs[0].data is BoardState)
 
+                // Business Logic
                 val outputBoardState = tx.outputStates[0] as BoardState
                 "Output board must have status GAME_IN_PROGRESS" using (outputBoardState.status == Status.GAME_IN_PROGRESS)
                 "You cannot play a game with yourself." using (outputBoardState.playerO != outputBoardState.playerX)
-                "Both parties together only may sign a StartGame transaction." using (command.signers == outputBoardState.participants.map { it.owningKey })
+                "Not valid starting board." using BoardUtils.checkIfValidStartBoard(outputBoardState.board)
+
+                // Signatures
+                "Both players must be the only participants." using (listOf(outputBoardState.playerO, outputBoardState.playerX).map { it.owningKey } == outputBoardState.participants.map { it.owningKey })
+                "Both participants must sign a StartGame transaction." using (command.signers == outputBoardState.participants.map { it.owningKey })
             }
 
             is Commands.SubmitTurn -> requireThat{
+                // Shape
                 "There should be one input state." using (tx.inputs.size == 1)
                 "There should be one output state." using (tx.outputs.size == 1)
                 "The input state should be of type BoardState." using (tx.inputStates.single() is BoardState)
                 "The output state should be of type BoardState." using (tx.outputStates.single() is BoardState)
 
+                // Business Logic
                 val inputBoardState = tx.inputStates.single() as BoardState
                 val outputBoardState = tx.outputStates.single() as BoardState
                 "Input board must have status GAME_IN_PROGRESS." using (inputBoardState.status == Status.GAME_IN_PROGRESS)
                 "Participants should not change." using (inputBoardState.participants == outputBoardState.participants)
+                "PlayerO should not change." using (inputBoardState.playerO == outputBoardState.playerO)
+                "PlayerX should not change." using (inputBoardState.playerX == outputBoardState.playerX)
                 "It cannot be the same players turn both in the input board and the output board." using (inputBoardState.isPlayerXTurn xor outputBoardState.isPlayerXTurn)
-
                 val playerChar = if (inputBoardState.isPlayerXTurn) 'X' else 'O'
                 "Not valid board update." using BoardUtils.checkIfValidBoardUpdate(inputBoardState.board, outputBoardState.board, playerChar)
+
+                // Signatures
+                "Both participants must sign a SubmitTurn transaction." using (command.signers == outputBoardState.participants.map { it.owningKey })
             }
             is Commands.EndGame -> requireThat{
+                // Shape
                 "There should be one input state." using (tx.inputs.size == 1)
                 "There should be no output state." using (tx.outputs.isEmpty())
                 "The input state should be of type BoardState." using (tx.inputs[0].state.data is BoardState)
 
+                // Business Logic
                 val inputBoardState = tx.inputStates.single() as BoardState
                 "Input board must have status GAME_OVER." using (inputBoardState.status == Status.GAME_OVER)
                 "The game must be over." using (BoardUtils.isGameOver(inputBoardState))
+
+                // Signatures
+                "Both participants must sign a EndGame transaction." using (command.signers == inputBoardState.participants.map { it.owningKey })
             }
         }
     }
@@ -82,6 +99,15 @@ class BoardContract : Contract {
                     setOf(Pair(0,0), Pair(1,1), Pair(2,2)),
                     setOf(Pair(2,0), Pair(1,1), Pair(0,2))
             )
+
+            fun checkIfValidStartBoard(board: Array<CharArray>): Boolean {
+                if (board.size != 3) return false
+                if (board[0].size != 3) return false
+                if (board[1].size != 3) return false
+                if (board[2].size != 3) return false
+                if (board.flatMap { it.asList() }.singleOrNull() ?: ' ' == 'E') return false
+                return true
+            }
 
             fun checkIfValidBoardUpdate(inputBoard: Array<CharArray>, outputBoard: Array<CharArray>, playerChar: Char): Boolean {
                 var numUpdates = 0

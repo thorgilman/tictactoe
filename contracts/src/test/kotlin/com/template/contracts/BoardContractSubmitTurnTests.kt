@@ -3,6 +3,7 @@ package com.template.contracts
 import com.template.states.BoardState
 import net.corda.core.contracts.TypeOnlyCommandData
 import net.corda.core.identity.CordaX500Name
+import net.corda.core.identity.Party
 import net.corda.testing.contracts.DummyState
 import net.corda.testing.core.TestIdentity
 import net.corda.testing.node.MockServices
@@ -18,11 +19,13 @@ class BoardContractSubmitTurnTests {
 
     lateinit var boardState: BoardState
     lateinit var publicKeys: List<PublicKey>
+    lateinit var partyA: Party
+    lateinit var partyB: Party
 
     @Before
     fun setup() {
-        val partyA = TestIdentity(CordaX500Name("PartyA","London","GB")).party
-        val partyB = TestIdentity(CordaX500Name("PartyB","New York","US")).party
+        partyA = TestIdentity(CordaX500Name("PartyA","London","GB")).party
+        partyB = TestIdentity(CordaX500Name("PartyB","New York","US")).party
         boardState = BoardState(partyA, partyB)
         publicKeys = boardState.participants.map {it.owningKey}
     }
@@ -156,6 +159,38 @@ class BoardContractSubmitTurnTests {
                 output(BoardContract.ID, boardState3)
                 command(publicKeys, BoardContract.Commands.SubmitTurn())
                 this `fails with` "Not valid board update."
+            }
+        }
+    }
+
+
+    @Test
+    fun bothPlayersMustSignSubmitTurnTransaction() {
+        val partyC = TestIdentity(CordaX500Name("PartyC","New York","US")).party
+        ledgerServices.ledger {
+            transaction {
+                command(listOf(partyA.owningKey, partyB.owningKey), BoardContract.Commands.SubmitTurn())
+                input(BoardContract.ID, boardState)
+                output(BoardContract.ID, boardState.returnNewBoardAfterMove(Pair(0,0)))
+                this.verifies()
+            }
+            transaction {
+                command(partyA.owningKey, BoardContract.Commands.SubmitTurn())
+                input(BoardContract.ID, boardState)
+                output(BoardContract.ID, boardState.returnNewBoardAfterMove(Pair(0,0)))
+                this `fails with` "Both participants must sign a SubmitTurn transaction."
+            }
+            transaction {
+                command(partyC.owningKey, BoardContract.Commands.SubmitTurn())
+                input(BoardContract.ID, boardState)
+                output(BoardContract.ID, boardState.returnNewBoardAfterMove(Pair(0,0)))
+                this `fails with` "Both participants must sign a SubmitTurn transaction."
+            }
+            transaction {
+                command(listOf(partyC.owningKey, partyA.owningKey, partyB.owningKey), BoardContract.Commands.SubmitTurn())
+                input(BoardContract.ID, boardState)
+                output(BoardContract.ID, boardState.returnNewBoardAfterMove(Pair(0,0)))
+                this `fails with` "Both participants must sign a SubmitTurn transaction."
             }
         }
     }
