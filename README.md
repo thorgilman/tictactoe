@@ -9,24 +9,22 @@ Welcome to the Tic-Tac-Toe CorDapp.
 # Deploying Locally
 Navigate to the CorDapps root directory in a terminal window.
 
-First run the command listed below to deploy the Corda nodes.
+First, run the command listed below to deploy the Corda nodes.
 
-    ./gradlew deployNodes>>>
+    ./gradlew deployNodes
 
 Then run the following command to run the Corda nodes.
 
-    build/nodes/runnodes>>>
+    build/nodes/runnodes
 
 Finally, we need to start the web servers for each node. Open three new terminal tabs and navigate to the root directory of the CorDapp in each. Now run one of the following commands in each terminal window.
 
     gradle runPartyA
     gradle runPartyB
-    gradle runPartyC>>>
+    gradle runPartyC
 
 Now you should be able to connect to the web frontend of each node using the links below.
 
 PartyA: http://localhost:10050
 PartyB: http://localhost:10060
 PartyC: http://localhost:10070
-
-# tictactoe
