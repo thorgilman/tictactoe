@@ -8,6 +8,7 @@ import net.corda.core.contracts.Requirements.using
 import net.corda.core.contracts.StateAndContract
 import net.corda.core.contracts.requireThat
 import net.corda.core.flows.*
+import net.corda.core.identity.CordaX500Name
 import net.corda.core.identity.Party
 import net.corda.core.node.services.Vault
 import net.corda.core.node.services.queryBy
@@ -16,9 +17,12 @@ import net.corda.core.transactions.SignedTransaction
 import net.corda.core.transactions.TransactionBuilder
 import net.corda.core.utilities.ProgressTracker
 
-// *********
-// * Flows *
-// *********
+/*
+This flow starts a game with another node by creating an new BoardState.
+The responding node cannot decline the request to start a game.
+The request is only denied if the responding node is already participating in a game.
+*/
+
 @InitiatingFlow
 @StartableByRPC
 class StartGameFlow(val otherPlayerParty: Party) : FlowLogic<SignedTransaction>() {
@@ -51,10 +55,8 @@ class StartGameFlow(val otherPlayerParty: Party) : FlowLogic<SignedTransaction>(
 
 @InitiatedBy(StartGameFlow::class)
 class StartGameFlowResponder(val counterpartySession: FlowSession) : FlowLogic<SignedTransaction>() {
-
     @Suspendable
     override fun call(): SignedTransaction {
-
         val signedTransactionFlow = object : SignTransactionFlow(counterpartySession) {
             override fun checkTransaction(stx: SignedTransaction) = requireThat {
                 // If this node is already participating in an active game, decline the request to start a new one

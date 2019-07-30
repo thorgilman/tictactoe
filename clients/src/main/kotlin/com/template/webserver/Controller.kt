@@ -1,6 +1,7 @@
 package com.template.webserver
 
 import com.template.contracts.BoardContract
+import com.template.flows.AvailableNodesFlow
 import com.template.flows.EndGameFlow
 import com.template.flows.StartGameFlow
 import com.template.flows.SubmitTurnFlow
@@ -9,6 +10,8 @@ import com.template.states.Status
 import net.corda.core.identity.CordaX500Name.Companion.parse
 import net.corda.core.messaging.startTrackedFlow
 import net.corda.core.messaging.vaultQueryBy
+import net.corda.core.node.services.Vault
+import net.corda.core.node.services.vault.QueryCriteria
 import net.corda.core.utilities.getOrThrow
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
@@ -35,8 +38,7 @@ class Controller(rpc: NodeRPCConnection) {
 
     @GetMapping(value = ["get-nodes"])
     private fun getNodes(): List<String> {
-        val nodesList = proxy.networkMapSnapshot() - proxy.nodeInfo() - proxy.nodeInfoFromParty(proxy.notaryIdentities().single())!!
-        return nodesList.map {  it.legalIdentitiesAndCerts.single().name.toString() }
+        return proxy.startTrackedFlow(::AvailableNodesFlow).returnValue.getOrThrow()
     }
 
     @GetMapping(value = ["get-you-are-text"], produces = ["text/plain"])
@@ -74,8 +76,7 @@ class Controller(rpc: NodeRPCConnection) {
 
     @PostMapping(value = ["start-game"], headers = ["Content-Type=application/json"])
     fun startGame(request: HttpServletRequest): ResponseEntity<String> {
-        val cordaX500NameString = request.inputStream.readTextAndClose()
-        val cordaX500Name = parse(cordaX500NameString)
+        val cordaX500Name = parse(request.inputStream.readTextAndClose())
         val party = proxy.wellKnownPartyFromX500Name(cordaX500Name)!!
         return try {
             val signedTx = proxy.startTrackedFlow(::StartGameFlow, party).returnValue.getOrThrow()
@@ -105,20 +106,19 @@ class Controller(rpc: NodeRPCConnection) {
         return try {
             val signedTx = proxy.startTrackedFlow(::SubmitTurnFlow, x, y).returnValue.getOrThrow()
             ResponseEntity.status(HttpStatus.CREATED).body("Transaction id ${signedTx.id} committed to ledger.\n")
-
         } catch (ex: Throwable) {
             logger.error(ex.message, ex)
             ResponseEntity.badRequest().body(ex.message!!)
         }
     }
 
-    @PostMapping(value = ["end-game"], headers = ["Content-Type=application/json"])
+    @PostMapping(value = ["end-game"])
     fun endGame(request: HttpServletRequest): ResponseEntity<String> {
         return try {
             val signedTx = proxy.startTrackedFlow(::EndGameFlow).returnValue.getOrThrow()
             ResponseEntity.status(HttpStatus.CREATED).body("Transaction id ${signedTx.id} committed to ledger.\n")
         } catch (ex: Throwable) {
-            //logger.error(ex.message, ex)
+            logger.error(ex.message, ex)
             ResponseEntity.badRequest().body(ex.message!!)
         }
     }

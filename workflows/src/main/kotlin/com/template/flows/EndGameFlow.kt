@@ -14,6 +14,11 @@ import net.corda.core.transactions.SignedTransaction
 import net.corda.core.transactions.TransactionBuilder
 import net.corda.core.utilities.ProgressTracker
 
+/*
+This flow ends a game by removing the BoardState from the ledger.
+This flow is started through an request from the frontend once the GAME_OVER status is detected on the BoardState.
+*/
+
 @InitiatingFlow
 @StartableByRPC
 class EndGameFlow : FlowLogic<SignedTransaction>() {
@@ -26,7 +31,6 @@ class EndGameFlow : FlowLogic<SignedTransaction>() {
 
         val notary = serviceHub.networkMapCache.notaryIdentities.single()
 
-        //val queryCriteria = QueryCriteria.LinearStateQueryCriteria(linearId = listOf(linearId))
         val queryCriteria = QueryCriteria.VaultQueryCriteria(Vault.StateStatus.UNCONSUMED)
         val boardStateRefToEnd = serviceHub.vaultService.queryBy<BoardState>(queryCriteria).states.single()
 
@@ -48,7 +52,6 @@ class EndGameFlow : FlowLogic<SignedTransaction>() {
 
 @InitiatedBy(EndGameFlow::class)
 class EndGameFlowResponder(val counterpartySession: FlowSession) : FlowLogic<SignedTransaction>() {
-
     @Suspendable
     override fun call(): SignedTransaction {
         val signedTransactionFlow = object : SignTransactionFlow(counterpartySession) {

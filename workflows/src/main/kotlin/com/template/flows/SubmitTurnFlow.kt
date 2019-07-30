@@ -19,6 +19,11 @@ import net.corda.core.transactions.SignedTransaction
 import net.corda.core.transactions.TransactionBuilder
 import net.corda.core.utilities.ProgressTracker
 
+/*
+This flow attempts submit a turn in the game.
+It must be the initiating node's turn otherwise this will result in a FlowException.
+*/
+
 @InitiatingFlow
 @StartableByRPC
 class SubmitTurnFlow(private val x: Int, private val y: Int) : FlowLogic<SignedTransaction>() {
@@ -42,7 +47,7 @@ class SubmitTurnFlow(private val x: Int, private val y: Int) : FlowLogic<SignedT
         if (inputBoardState.getCurrentPlayerParty() != ourIdentity) throw FlowException("It's not your turn!")
 
         val command = Command(BoardContract.Commands.SubmitTurn(), inputBoardState.participants.map { it.owningKey })
-        var outputBoardState = inputBoardState.returnNewBoardAfterMove(Pair(x,y))
+        val outputBoardState = inputBoardState.returnNewBoardAfterMove(Pair(x,y))
 
         val txBuilder = TransactionBuilder(notary)
                 .addInputState(inputBoardStateAndRef)
