@@ -19,9 +19,9 @@ Then run the following command to run the Corda nodes.
 
 Finally, we need to start the web servers for each node. Open three new terminal tabs and navigate to the root directory of the CorDapp in each. Now run one of the following commands in each terminal window.
 
-    gradle runPartyA
-    gradle runPartyB
-    gradle runPartyC
+    ./gradlew runPartyA
+    ./gradlew runPartyB
+    ./gradlew runPartyC
 
 Now you should be able to connect to the web frontend of each node using the links below.
 
