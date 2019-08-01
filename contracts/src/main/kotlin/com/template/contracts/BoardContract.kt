@@ -132,25 +132,22 @@ class BoardContract : Contract {
 
             fun isGameOver(boardState: BoardState): Boolean {
                 val board: Array<CharArray> = boardState.board
-                if (board.flatMap{ it.asList() }.indexOf('E') == -1) return true
-
                 for (potentialWin in potentialWins) {
                     val c = potentialWin.map { (x,y) -> board[x][y] }.distinct().singleOrNull()
                     if (c != null && (c == 'O' || c == 'X')) return true
                 }
+                if (board.flatMap{ it.asList() }.indexOf('E') == -1) return true
                 return false
             }
 
             fun getWinner(boardState: BoardState): Party? {
                 val board: Array<CharArray> = boardState.board
-                if (board.flatMap { it.asList() }.indexOf('E') == -1) return null
-
                 for (potentialWin in potentialWins) {
                     val c = potentialWin.map { (x,y) -> board[x][y] }.distinct().singleOrNull()
-                    if (c == null) continue
                     if (c == 'O') return boardState.playerO
                     if (c == 'X') return boardState.playerX
                 }
+                //if (board.flatMap { it.asList() }.indexOf('E') == -1) return null
                 return null
             }
 
