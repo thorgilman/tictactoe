@@ -231,7 +231,6 @@ class EndGameIntegrationTest {
         assert(!BoardContract.BoardUtils.isGameOver(boardState))
 
         // Move #2
-        // TODO val future = nodeB.startFlow(EndGameFlow(boardState.linearId))
         val future = nodeB.startFlow(EndGameFlow())
         mockNetwork.runNetwork()
 

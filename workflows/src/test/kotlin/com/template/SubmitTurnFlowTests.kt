@@ -30,19 +30,13 @@ class SubmitTurnFlowTests {
     private lateinit var partyA: Party
     private lateinit var partyB: Party
 
-    init {
-        // ???
-    }
-
     @Before
     fun setup() {
         nodeA = mockNetwork.createNode()
         nodeB = mockNetwork.createNode()
         partyA = nodeA.info.chooseIdentityAndCert().party
         partyB = nodeB.info.chooseIdentityAndCert().party
-        listOf(nodeA, nodeB).forEach {
-            it.registerInitiatedFlow(SubmitTurnFlowResponder::class.java)
-        }
+
         nodeA.startFlow(StartGameFlow(partyB))
         mockNetwork.runNetwork()
     }

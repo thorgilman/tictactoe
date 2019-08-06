@@ -1,6 +1,7 @@
 package com.template.contracts
 
 import com.template.states.BoardState
+import com.template.states.Status
 import net.corda.core.contracts.TypeOnlyCommandData
 import net.corda.core.identity.CordaX500Name
 import net.corda.core.identity.Party
@@ -27,35 +28,68 @@ class BoardContractEndGameTests {
         partyA = TestIdentity(CordaX500Name("PartyA","London","GB")).party
         partyB = TestIdentity(CordaX500Name("PartyB","New York","US")).party
         boardState = BoardState(partyA, partyB)
+        val board: Array<CharArray> = arrayOf(charArrayOf('O', 'O', 'X'),
+                                              charArrayOf('O', 'X', 'X'),
+                                              charArrayOf('O', 'X', 'O'))
+        boardState = boardState.copy(status = Status.GAME_OVER, board = board)
         publicKeys = boardState.participants.map {it.owningKey}
     }
 
     // TODO TODO TODO
     @Test
     fun mustIncludeEndGameCommand() {
-//        ledgerServices.ledger {
-//            transaction {
-//                input(BoardContract.ID, boardState)
-//                command(publicKeys, BoardContract.Commands.EndGame())
-//                this.verifies()
-//            }
-//            transaction {
-//                input(BoardContract.ID, boardState)
-//                command(publicKeys, DummyCommand())
-//                this.fails()
-//            }
-//        }
+        ledgerServices.ledger {
+            transaction {
+                input(BoardContract.ID, boardState)
+                command(publicKeys, BoardContract.Commands.EndGame())
+                this.verifies()
+            }
+            transaction {
+                input(BoardContract.ID, boardState)
+                command(publicKeys, DummyCommand())
+                this.fails()
+            }
+        }
     }
 
 
     @Test
-    fun endGameTransactionMustHaveOneInputs() {
-
+    fun endGameTransactionMustHaveOneInput() {
+        ledgerServices.ledger {
+            transaction {
+                input(BoardContract.ID, boardState)
+                command(publicKeys, BoardContract.Commands.EndGame())
+                this.verifies()
+            }
+            transaction {
+                input(BoardContract.ID, DummyState())
+                command(publicKeys, BoardContract.Commands.EndGame())
+                this `fails with` "The input state should be of type BoardState."
+            }
+            transaction {
+                input(BoardContract.ID, boardState)
+                input(BoardContract.ID, DummyState())
+                command(publicKeys, BoardContract.Commands.EndGame())
+                this `fails with` "There should be one input state."
+            }
+        }
     }
 
     @Test
-    fun endGameTransactionMustHaveOneOutput() {
-
+    fun endGameTransactionMustHaveNoOutput() {
+        ledgerServices.ledger {
+            transaction {
+                input(BoardContract.ID, boardState)
+                command(publicKeys, BoardContract.Commands.EndGame())
+                this.verifies()
+            }
+            transaction {
+                input(BoardContract.ID, boardState)
+                output(BoardContract.ID, DummyState())
+                command(publicKeys, BoardContract.Commands.EndGame())
+                this `fails with` "There should be no output state."
+            }
+        }
     }
 
 
@@ -66,25 +100,21 @@ class BoardContractEndGameTests {
             transaction {
                 command(listOf(partyA.owningKey, partyB.owningKey), BoardContract.Commands.EndGame())
                 input(BoardContract.ID, boardState)
-                output(BoardContract.ID, boardState.returnNewBoardAfterMove(Pair(0,0)))
                 this.verifies()
             }
             transaction {
                 command(partyA.owningKey, BoardContract.Commands.EndGame())
                 input(BoardContract.ID, boardState)
-                output(BoardContract.ID, boardState.returnNewBoardAfterMove(Pair(0,0)))
                 this `fails with` "Both participants must sign a EndGame transaction."
             }
             transaction {
                 command(partyC.owningKey, BoardContract.Commands.EndGame())
                 input(BoardContract.ID, boardState)
-                output(BoardContract.ID, boardState.returnNewBoardAfterMove(Pair(0,0)))
                 this `fails with` "Both participants must sign a EndGame transaction."
             }
             transaction {
                 command(listOf(partyC.owningKey, partyA.owningKey, partyB.owningKey), BoardContract.Commands.EndGame())
                 input(BoardContract.ID, boardState)
-                output(BoardContract.ID, boardState.returnNewBoardAfterMove(Pair(0,0)))
                 this `fails with` "Both participants must sign a EndGame transaction."
             }
         }
