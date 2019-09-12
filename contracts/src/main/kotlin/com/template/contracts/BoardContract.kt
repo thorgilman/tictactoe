@@ -61,6 +61,7 @@ class BoardContract : Contract {
                 "Not valid board update." using BoardUtils.checkIfValidBoardUpdate(inputBoardState.board, outputBoardState.board, playerChar)
 
                 // Signatures
+                // TODO: Should only the initiating party sign?
                 "Both participants must sign a SubmitTurn transaction." using (command.signers == outputBoardState.participants.map { it.owningKey })
             }
             is Commands.EndGame -> requireThat{
@@ -147,7 +148,6 @@ class BoardContract : Contract {
                     if (c == 'O') return boardState.playerO
                     if (c == 'X') return boardState.playerX
                 }
-                //if (board.flatMap { it.asList() }.indexOf('E') == -1) return null
                 return null
             }
 

@@ -18,7 +18,7 @@ enum class Status {
 data class BoardState(val playerO: Party,
                       val playerX: Party,
                       val isPlayerXTurn: Boolean = false,
-                      val board: Array<CharArray> = Array(3, { charArrayOf('E', 'E', 'E')}),
+                      val board: Array<CharArray> = Array(3, {charArrayOf('E', 'E', 'E')} ),
                       val status: Status = Status.GAME_IN_PROGRESS,
                       override val linearId: UniqueIdentifier = UniqueIdentifier()): LinearState {
 
@@ -30,7 +30,6 @@ data class BoardState(val playerO: Party,
     // Get deep copy of board
     private fun Array<CharArray>.copy() = Array(size) { get(it).clone() }
 
-    // TODO: Also move to BoardContract?
     // Returns a copy of a BoardState object after a move at Pair<x,y>
     fun returnNewBoardAfterMove(pos: Pair<Int,Int>): BoardState {
         if (pos.first > 2 || pos.second > 2) throw IllegalStateException("Invalid board index.")

@@ -35,7 +35,6 @@ class BoardContractEndGameTests {
         publicKeys = boardState.participants.map {it.owningKey}
     }
 
-    // TODO TODO TODO
     @Test
     fun mustIncludeEndGameCommand() {
         ledgerServices.ledger {
@@ -51,7 +50,6 @@ class BoardContractEndGameTests {
             }
         }
     }
-
 
     @Test
     fun endGameTransactionMustHaveOneInput() {
@@ -92,7 +90,6 @@ class BoardContractEndGameTests {
         }
     }
 
-
     @Test
     fun bothPlayersMustSignEndGameTransaction() {
         val partyC = TestIdentity(CordaX500Name("PartyC","New York","US")).party
@@ -119,6 +116,5 @@ class BoardContractEndGameTests {
             }
         }
     }
-
 
 }

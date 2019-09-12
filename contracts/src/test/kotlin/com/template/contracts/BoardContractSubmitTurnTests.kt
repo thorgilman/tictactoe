@@ -30,7 +30,6 @@ class BoardContractSubmitTurnTests {
         publicKeys = boardState.participants.map {it.owningKey}
     }
 
-
     @Test
     fun mustIncludeMakeMoveCommand() {
         ledgerServices.ledger {
@@ -48,7 +47,6 @@ class BoardContractSubmitTurnTests {
             }
         }
     }
-
 
     @Test
     fun makeMoveTransactionMustHaveOneInput() {
@@ -142,7 +140,6 @@ class BoardContractSubmitTurnTests {
         }
     }
 
-
     @Test
     fun mustBeValidBoardUpdate() {
         ledgerServices.ledger {
@@ -162,7 +159,6 @@ class BoardContractSubmitTurnTests {
             }
         }
     }
-
 
     @Test
     fun bothPlayersMustSignSubmitTurnTransaction() {
