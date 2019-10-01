@@ -30,8 +30,8 @@ class AvailableNodesFlow : FlowLogic<List<String>>() {
 
     @Suspendable
     override fun call(): List<String> {
-        val notary = serviceHub.networkMapCache.notaryIdentities.single()
-        val nodesList = serviceHub.networkMapCache.allNodes.map { it.legalIdentities.single() } - ourIdentity - notary
+        val notary = serviceHub.networkMapCache.notaryIdentities.first()
+        val nodesList = serviceHub.networkMapCache.allNodes.map { it.legalIdentities.first() } - ourIdentity - notary
         val sessions = nodesList.map { initiateFlow(it) }.toSet()
 
         val partyList: MutableList<String> = mutableListOf()

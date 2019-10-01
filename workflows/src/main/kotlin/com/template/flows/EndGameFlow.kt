@@ -29,7 +29,7 @@ class EndGameFlow : FlowLogic<SignedTransaction>() {
     @Suspendable
     override fun call(): SignedTransaction {
 
-        val notary = serviceHub.networkMapCache.notaryIdentities.single()
+        val notary = serviceHub.networkMapCache.notaryIdentities.first()
 
         val queryCriteria = QueryCriteria.VaultQueryCriteria(Vault.StateStatus.UNCONSUMED)
         val boardStateRefToEnd = serviceHub.vaultService.queryBy<BoardState>(queryCriteria).states.single()

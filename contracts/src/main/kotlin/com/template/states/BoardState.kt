@@ -17,7 +17,7 @@ enum class Status {
 @CordaSerializable
 data class BoardState(val playerO: Party,
                       val playerX: Party,
-                      val isPlayerXTurn: Boolean = false,
+                      val isPlayerXTurn: java.lang.Boolean = java.lang.Boolean(false),
                       val board: Array<CharArray> = Array(3, {charArrayOf('E', 'E', 'E')} ),
                       val status: Status = Status.GAME_IN_PROGRESS,
                       override val linearId: UniqueIdentifier = UniqueIdentifier()): LinearState {
@@ -25,7 +25,7 @@ data class BoardState(val playerO: Party,
     override val participants: List<AbstractParty> = listOf(playerO, playerX)
 
     // Returns the party of the current player
-    fun getCurrentPlayerParty(): Party { return if (isPlayerXTurn) playerX else playerO }
+    fun getCurrentPlayerParty(): Party { return if (isPlayerXTurn.booleanValue()) playerX else playerO }
 
     // Get deep copy of board
     private fun Array<CharArray>.copy() = Array(size) { get(it).clone() }
@@ -34,10 +34,10 @@ data class BoardState(val playerO: Party,
     fun returnNewBoardAfterMove(pos: Pair<Int,Int>): BoardState {
         if (pos.first > 2 || pos.second > 2) throw IllegalStateException("Invalid board index.")
         val newBoard = board.copy()
-        if (isPlayerXTurn) newBoard[pos.second][pos.first] = 'X'
+        if (isPlayerXTurn.booleanValue()) newBoard[pos.second][pos.first] = 'X'
         else newBoard[pos.second][pos.first] = 'O'
 
-        val newBoardState = copy(board = newBoard, isPlayerXTurn = !isPlayerXTurn)
+        val newBoardState = copy(board = newBoard, isPlayerXTurn = java.lang.Boolean(!isPlayerXTurn.booleanValue()))
         if (BoardContract.BoardUtils.isGameOver(newBoardState)) return newBoardState.copy(status = Status.GAME_OVER)
         return newBoardState
     }

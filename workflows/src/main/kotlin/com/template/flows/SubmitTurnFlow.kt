@@ -34,7 +34,7 @@ class SubmitTurnFlow(private val x: Int, private val y: Int) : FlowLogic<SignedT
     @Suspendable
     override fun call(): SignedTransaction {
 
-        val notary = serviceHub.networkMapCache.notaryIdentities.single()
+        val notary = serviceHub.networkMapCache.notaryIdentities.first()
         val criteria = QueryCriteria.VaultQueryCriteria(Vault.StateStatus.UNCONSUMED)
         val results = serviceHub.vaultService.queryBy<BoardState>(criteria)
         val states = results.states

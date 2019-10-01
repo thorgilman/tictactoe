@@ -32,13 +32,12 @@ class StartGameFlow(val otherPlayerParty: Party) : FlowLogic<SignedTransaction>(
 
     @Suspendable
     override fun call(): SignedTransaction {
-
         // If this node is already participating in an active game, decline the request to start a new one
         val criteria = QueryCriteria.VaultQueryCriteria(Vault.StateStatus.UNCONSUMED)
         val results = serviceHub.vaultService.queryBy<BoardState>(criteria)
         if (results.states.isNotEmpty()) throw FlowException("A node can only play one game at a time!")
 
-        val notary = serviceHub.networkMapCache.notaryIdentities.single()
+        val notary = serviceHub.networkMapCache.notaryIdentities.first()
         val command = Command(BoardContract.Commands.StartGame(), listOf(ourIdentity, otherPlayerParty).map { it.owningKey })
 
         val initialBoardState = BoardState(ourIdentity, otherPlayerParty)

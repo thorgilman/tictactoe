@@ -56,8 +56,8 @@ class BoardContract : Contract {
                 "Participants should not change." using (inputBoardState.participants == outputBoardState.participants)
                 "PlayerO should not change." using (inputBoardState.playerO == outputBoardState.playerO)
                 "PlayerX should not change." using (inputBoardState.playerX == outputBoardState.playerX)
-                "It cannot be the same players turn both in the input board and the output board." using (inputBoardState.isPlayerXTurn xor outputBoardState.isPlayerXTurn)
-                val playerChar = if (inputBoardState.isPlayerXTurn) 'X' else 'O'
+                "It cannot be the same players turn both in the input board and the output board." using (inputBoardState.isPlayerXTurn.booleanValue() xor outputBoardState.isPlayerXTurn.booleanValue())
+                val playerChar = if (inputBoardState.isPlayerXTurn.booleanValue()) 'X' else 'O'
                 "Not valid board update." using BoardUtils.checkIfValidBoardUpdate(inputBoardState.board, outputBoardState.board, playerChar)
 
                 // Signatures
