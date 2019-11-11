@@ -1,9 +1,12 @@
 package com.template.states
 
 import com.template.contracts.BoardContract
+import com.template.schemas.BoardStateSchemaV1
 import net.corda.core.contracts.*
 import net.corda.core.identity.AbstractParty
 import net.corda.core.identity.Party
+import net.corda.core.schemas.MappedSchema
+import net.corda.core.schemas.PersistentState
 import net.corda.core.schemas.QueryableState
 import net.corda.core.serialization.CordaSerializable
 import kotlin.IllegalStateException
@@ -20,7 +23,7 @@ data class BoardState(val playerO: Party,
                       val isPlayerXTurn: java.lang.Boolean = java.lang.Boolean(false),
                       val board: Array<CharArray> = Array(3, {charArrayOf('E', 'E', 'E')} ),
                       val status: Status = Status.GAME_IN_PROGRESS,
-                      override val linearId: UniqueIdentifier = UniqueIdentifier()): LinearState {
+                      override val linearId: UniqueIdentifier = UniqueIdentifier()): LinearState, QueryableState {
 
     override val participants: List<AbstractParty> = listOf(playerO, playerX)
 
@@ -40,6 +43,12 @@ data class BoardState(val playerO: Party,
         val newBoardState = copy(board = newBoard, isPlayerXTurn = java.lang.Boolean(!isPlayerXTurn.booleanValue()))
         if (BoardContract.BoardUtils.isGameOver(newBoardState)) return newBoardState.copy(status = Status.GAME_OVER)
         return newBoardState
+    }
+
+    override fun supportedSchemas(): Iterable<MappedSchema> = listOf(BoardStateSchemaV1)
+    override fun generateMappedObject(schema: MappedSchema): PersistentState {
+        if (!(schema is BoardStateSchemaV1)) throw Exception()
+        return BoardStateSchemaV1.PersistentBoardState(playerO, playerX, isPlayerXTurn, board, status, linearId.id)
     }
 
 }
