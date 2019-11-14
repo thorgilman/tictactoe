@@ -7,7 +7,17 @@ cordapp {
         name "Tic-Tac-Toe - Contracts"
         vendor "Corda Open Source"
         licence "Apache License, Version 2.0"
-        versionId 3
+        versionId 1
+    }
+    signing {
+        enabled false
+        options {
+            keystore "/Users/thorgilman/Desktop/thor_key.jks"
+            alias "thorkey"
+            storepass "password"
+            keypass "password"
+            storetype "JKS"
+        }
     }
 }
 
