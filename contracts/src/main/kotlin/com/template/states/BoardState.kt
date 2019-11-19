@@ -23,6 +23,7 @@ data class BoardState(val playerO: Party,
                       val isPlayerXTurn: java.lang.Boolean = java.lang.Boolean(false),
                       val board: Array<CharArray> = Array(3, {charArrayOf('E', 'E', 'E')} ),
                       val status: Status = Status.GAME_IN_PROGRESS,
+                      val myString: String? = "This is a string.",
                       override val linearId: UniqueIdentifier = UniqueIdentifier()): LinearState, QueryableState {
 
     override val participants: List<AbstractParty> = listOf(playerO, playerX)
@@ -48,7 +49,7 @@ data class BoardState(val playerO: Party,
     override fun supportedSchemas(): Iterable<MappedSchema> = listOf(BoardStateSchemaV1)
     override fun generateMappedObject(schema: MappedSchema): PersistentState {
         if (!(schema is BoardStateSchemaV1)) throw Exception()
-        return BoardStateSchemaV1.PersistentBoardState(playerO, playerX, isPlayerXTurn, board, status, linearId.id)
+        return BoardStateSchemaV1.PersistentBoardState(playerO, playerX, isPlayerXTurn, board, status, myString, linearId.id)
     }
 
 }

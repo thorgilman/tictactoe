@@ -5,6 +5,13 @@
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd
                    http://www.liquibase.org/xml/ns/dbchangelog
                    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
-    <include file="migration/board_schema.changelog.init.xml"/>
-    <include file="migration/board_schema.changelog.v2.xml"/>
+
+    <changeSet author="Thor_Gilman" id="add_new_field">
+        <addColumn tableName="board_states">
+            <column name="myString" type="NVARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
 </databaseChangeLog>

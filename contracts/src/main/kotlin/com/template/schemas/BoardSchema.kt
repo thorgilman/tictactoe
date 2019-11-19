@@ -31,10 +31,13 @@ object BoardStateSchemaV1 : MappedSchema(schemaFamily = BoardStateSchema.javaCla
             @Column(name = "status")
             var status: Status,
 
+            @Column(name = "myString")
+            var myString: String?,
+
             @Column(name = "linearId")
             @Type(type = "uuid-char")
             var linearId: UUID
     ) : PersistentState()
 
-    override val migrationResource = "board_schema.changelog.init"
+    override val migrationResource = "board_schema.changelog.master"
 }
