@@ -38,7 +38,7 @@ class BoardContract : Contract {
                 "Not valid starting board." using BoardUtils.checkIfValidStartBoard(outputBoardState.board)
 
                 // Signatures
-                "Both players must be the only participants." using (listOf(outputBoardState.playerO, outputBoardState.playerX).map { it.owningKey } == outputBoardState.participants.map { it.owningKey })
+                //"Both players must be the only participants." using (listOf(outputBoardState.playerO, outputBoardState.playerX).map { it.owningKey } == outputBoardState.participants.map { it.owningKey })
                 "Both participants must sign a StartGame transaction." using (command.signers == outputBoardState.participants.map { it.owningKey })
             }
 

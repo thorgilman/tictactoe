@@ -9,6 +9,7 @@ import net.corda.core.schemas.MappedSchema
 import net.corda.core.schemas.PersistentState
 import net.corda.core.schemas.QueryableState
 import net.corda.core.serialization.CordaSerializable
+import org.apache.commons.lang.ObjectUtils
 import kotlin.IllegalStateException
 
 @CordaSerializable
@@ -23,9 +24,10 @@ data class BoardState(val playerO: Party,
                       val isPlayerXTurn: java.lang.Boolean = java.lang.Boolean(false),
                       val board: Array<CharArray> = Array(3, {charArrayOf('E', 'E', 'E')} ),
                       val status: Status = Status.GAME_IN_PROGRESS,
+                      val observer: Party? = null,
                       override val linearId: UniqueIdentifier = UniqueIdentifier()): LinearState, QueryableState {
 
-    override val participants: List<AbstractParty> = listOf(playerO, playerX)
+    override val participants: List<AbstractParty> = listOfNotNull(playerO, playerX, observer)
 
     // Returns the party of the current player
     fun getCurrentPlayerParty(): Party { return if (isPlayerXTurn.booleanValue()) playerX else playerO }

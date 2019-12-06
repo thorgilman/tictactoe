@@ -1,25 +1,21 @@
 package com.template.webserver
 
 import com.template.contracts.BoardContract
-import com.template.flows.AvailableNodesFlow
-import com.template.flows.EndGameFlow
-import com.template.flows.StartGameFlow
-import com.template.flows.SubmitTurnFlow
+import com.template.flows.*
 import com.template.states.BoardState
 import com.template.states.Status
 import net.corda.core.identity.CordaX500Name.Companion.parse
+import net.corda.core.identity.Party
 import net.corda.core.messaging.startTrackedFlow
 import net.corda.core.messaging.vaultQueryBy
 import net.corda.core.node.services.Vault
 import net.corda.core.node.services.vault.QueryCriteria
+import net.corda.core.transactions.SignedTransaction
 import net.corda.core.utilities.getOrThrow
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 import java.io.InputStream
 import java.nio.charset.Charset
 import javax.servlet.http.HttpServletRequest
@@ -74,12 +70,17 @@ class Controller(rpc: NodeRPCConnection) {
         return "You loose!"
     }
 
-    @PostMapping(value = ["start-game"], headers = ["Content-Type=application/json"])
-    fun startGame(request: HttpServletRequest): ResponseEntity<String> {
-        val cordaX500Name = parse(request.inputStream.readTextAndClose())
-        val party = proxy.wellKnownPartyFromX500Name(cordaX500Name)!!
+    @RequestMapping(value = ["start-game"], headers = ["Content-Type=application/json"])
+    fun startGame(@RequestParam(value = "party", defaultValue = "") party: String,
+                  @RequestParam(value = "observer", defaultValue = "") observer: String): ResponseEntity<String> {
         return try {
-            val signedTx = proxy.startTrackedFlow(::StartGameFlow, party).returnValue.getOrThrow()
+            val wellKnownParty = proxy.wellKnownPartyFromX500Name(parse(party))!!
+            val wellKnownObserver = proxy.wellKnownPartyFromX500Name(parse(observer))
+
+            lateinit var signedTx: SignedTransaction
+            if (wellKnownObserver == null) signedTx = proxy.startTrackedFlow(::StartGameFlow, wellKnownParty).returnValue.getOrThrow()
+            else signedTx = proxy.startTrackedFlow(::StartGameFlowWithObserver, wellKnownParty, wellKnownObserver).returnValue.getOrThrow()
+
             ResponseEntity.status(HttpStatus.CREATED).body("Transaction id ${signedTx.id} committed to ledger.\n")
         } catch (ex: Throwable) {
             logger.error(ex.message, ex)
