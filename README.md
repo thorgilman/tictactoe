@@ -28,3 +28,6 @@ Now you should be able to connect to the web frontend of each node using the lin
 PartyA: http://localhost:10050
 PartyB: http://localhost:10060
 PartyC: http://localhost:10070
+
+![](resources/screenshot.png)
+
