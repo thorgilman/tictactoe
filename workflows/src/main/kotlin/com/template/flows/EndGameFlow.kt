@@ -43,10 +43,9 @@ class EndGameFlow : FlowLogic<SignedTransaction>() {
         val otherPlayerParty = (boardStateRefToEnd.state.data.participants.map {it as Party} - ourIdentity).single()
 
         val ptx = serviceHub.signInitialTransaction(txBuilder)
-        val targetSession = initiateFlow(otherPlayerParty)
-        val stx = subFlow(CollectSignaturesFlow(ptx, listOf(targetSession)))
-
-        return subFlow(FinalityFlow(stx, targetSession))
+        val targetSessions = (boardStateRefToEnd.state.data.participants - ourIdentity).map { initiateFlow(it as Party) }
+        val stx = subFlow(CollectSignaturesFlow(ptx, targetSessions))
+        return subFlow(FinalityFlow(stx, targetSessions))
     }
 }
 

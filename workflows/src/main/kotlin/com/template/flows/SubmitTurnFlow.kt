@@ -41,7 +41,7 @@ class SubmitTurnFlow(private val x: Int, private val y: Int) : FlowLogic<SignedT
 
         val inputBoardStateAndRef = states.single()
         val inputBoardState = inputBoardStateAndRef.state.data
-        val opponentParty = (inputBoardState.participants - ourIdentity).single() as Party
+        //val opponentParty = (listOf(inputBoardState.playerO, inputBoardState.playerX) - ourIdentity).single()
 
         // Check that the correct party executed this flow
         if (inputBoardState.getCurrentPlayerParty() != ourIdentity) throw FlowException("It's not your turn!")
@@ -56,9 +56,9 @@ class SubmitTurnFlow(private val x: Int, private val y: Int) : FlowLogic<SignedT
 
         txBuilder.verify(serviceHub)
         val ptx = serviceHub.signInitialTransaction(txBuilder)
-        val session = initiateFlow(opponentParty)
-        val stx = subFlow(CollectSignaturesFlow(ptx, listOf(session)))
-        return subFlow(FinalityFlow(stx, session))
+        val targetSessions = (outputBoardState.participants - ourIdentity).map { initiateFlow(it as Party) }
+        val stx = subFlow(CollectSignaturesFlow(ptx, targetSessions))
+        return subFlow(FinalityFlow(stx, targetSessions))
     }
 }
 
