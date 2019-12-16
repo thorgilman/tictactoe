@@ -1,5 +1,6 @@
 package com.template.webserver
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.template.contracts.BoardContract
 import com.template.flows.*
 import com.template.states.BoardState
@@ -16,9 +17,11 @@ import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import java.io.BufferedReader
 import java.io.InputStream
 import java.nio.charset.Charset
 import javax.servlet.http.HttpServletRequest
+import kotlin.streams.toList
 
 @RestController
 @RequestMapping("/") // The paths for HTTP requests are relative to this base path.
@@ -71,11 +74,11 @@ class Controller(rpc: NodeRPCConnection) {
     }
 
     @RequestMapping(value = ["start-game"], headers = ["Content-Type=application/json"])
-    fun startGame(@RequestParam(value = "party", defaultValue = "") party: String,
-                  @RequestParam(value = "observer", defaultValue = "") observer: String): ResponseEntity<String> {
+    fun startGame(request: HttpServletRequest): ResponseEntity<String> {
         return try {
-            val wellKnownParty = proxy.wellKnownPartyFromX500Name(parse(party))!!
-            val wellKnownObserver = proxy.wellKnownPartyFromX500Name(parse(observer))
+            val lines = request.inputStream.readTextAndClose().split('\n')
+            val wellKnownParty = proxy.wellKnownPartyFromX500Name(parse(lines[0]))!!
+            val wellKnownObserver = proxy.wellKnownPartyFromX500Name(parse(lines[1]))
 
             lateinit var signedTx: SignedTransaction
             if (wellKnownObserver == null) signedTx = proxy.startTrackedFlow(::StartGameFlow, wellKnownParty).returnValue.getOrThrow()
