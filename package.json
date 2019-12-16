@@ -19,6 +19,7 @@
   "homepage": "https://github.com/thorgilman/tictactoe#readme",
   "dependencies": {
     "babel-cli": "^6.26.0",
-    "babel-preset-react-app": "^3.1.2"
+    "babel-preset-react-app": "^3.1.2",
+    "gson": "^0.1.5"
   }
 }

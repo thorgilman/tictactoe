@@ -38,7 +38,8 @@ function setUpChooseOpponentWindow() {
 
     document.getElementById("startGameButtonId").addEventListener("click", function() {
         let opponentName = document.getElementById("options").selectedOptions[0].innerHTML;
-        eventStartGame(opponentName);
+        let observerName = document.getElementById("options2").selectedOptions[0].innerHTML;
+        eventStartGame(opponentName, observerName);
         updateCheck();
         document.getElementById("chooseOpponentModel").style.display = "none";
     })
@@ -55,11 +56,15 @@ function showChooseOpponentWindow() {
     axios.get('get-nodes').then(function (result) {
         var nodesArray = Array.from(result.data);
         var select = document.getElementById("options");
+        var select2 = document.getElementById("options2");
         select.innerHTML = '';
         for (var i=0; i<nodesArray.length; i++) {
-            var el = document.createElement("option");
-            el.textContent = nodesArray[i];
-            select.appendChild(el);
+            var e1 = document.createElement("option");
+            e1.textContent = nodesArray[i];
+            select.appendChild(e1);
+            var e2 = document.createElement("option");
+            e2.textContent = nodesArray[i];
+            select2.appendChild(e2);
         }
     })
     document.getElementById("chooseOpponentModel").style.display = "block";
@@ -83,8 +88,9 @@ function popUp(text) {
 
 
 // Attempts to run StartGameFlow with party
-function eventStartGame(party) {
-    axios.post('start-game', party, {headers: {'Content-Type': 'application/json'}})
+function eventStartGame(partyName, observerName) {
+    //axios.post('start-game', partyName, observerName)
+    axios.post('start-game', partyName + '\n' + observerName, {headers: {'Content-Type': 'application/json'}})
 }
 
 
@@ -113,6 +119,7 @@ function updateCheck() {
 
         var array = Array.from(result.data);
         if (array.length == 0) { // no active game
+
             // If no pop up is already being displayed, display the choose opponent window
             if (document.getElementById("popUpModel").style.display == "none" && document.getElementById("chooseOpponentModel").style.display == "none") showChooseOpponentWindow();
         }

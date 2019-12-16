@@ -40,7 +40,7 @@ class EndGameFlow : FlowLogic<SignedTransaction>() {
                 .addCommand(command)
         txBuilder.verify(serviceHub)
 
-        val otherPlayerParty = (boardStateRefToEnd.state.data.participants.map {it as Party} - ourIdentity).single()
+        //val otherPlayerParty = (listOf(boardStateRefToEnd.state.data.playerO, boardStateRefToEnd.state.data.playerX) - ourIdentity).single()
 
         val ptx = serviceHub.signInitialTransaction(txBuilder)
         val targetSessions = (boardStateRefToEnd.state.data.participants - ourIdentity).map { initiateFlow(it as Party) }
