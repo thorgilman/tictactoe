@@ -70,7 +70,7 @@ class Controller(rpc: NodeRPCConnection) {
         if (winningParty == null) return "No winner!"
         val myParty = proxy.nodeInfo().legalIdentities.single()
         if (myParty == winningParty) return "You win!"
-        return "You loose!"
+        return "You lose!"
     }
 
     @RequestMapping(value = ["start-game"], headers = ["Content-Type=application/json"])
