@@ -43,6 +43,7 @@ class StartGameFlow(val otherPlayerParty: Party) : FlowLogic<SignedTransaction>(
         val initialBoardState = BoardState(ourIdentity, otherPlayerParty)
         val stateAndContract = StateAndContract(initialBoardState, BoardContract.ID)
         val txBuilder = TransactionBuilder(notary).withItems(stateAndContract, command)
+
         txBuilder.verify(serviceHub)
 
         val ptx = serviceHub.signInitialTransaction(txBuilder)
