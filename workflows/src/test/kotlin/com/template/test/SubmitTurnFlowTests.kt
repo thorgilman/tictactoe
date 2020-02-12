@@ -1,4 +1,4 @@
-package com.template
+package com.template.test
 
 import com.template.contracts.BoardContract
 import com.template.flows.StartGameFlow
