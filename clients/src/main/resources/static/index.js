@@ -89,8 +89,8 @@ function popUp(text) {
 
 // Attempts to run StartGameFlow with party
 function eventStartGame(partyName, observerName) {
-    //axios.post('start-game', partyName, observerName)
-    axios.post('start-game', partyName + '\n' + observerName, {headers: {'Content-Type': 'application/json'}})
+    axios.post('start-game', partyName, observerName, {headers: {'Content-Type': 'application/json'}})
+
 }
 
 

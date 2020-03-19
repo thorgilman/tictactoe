@@ -77,17 +77,16 @@ class Controller(rpc: NodeRPCConnection) {
 
 
     @RequestMapping(value = ["start-game"], headers = ["Content-Type=application/json"])
-    fun startGame(@RequestBody partiesString: String): ResponseEntity<String> {
+    fun startGame(@RequestAttribute otherPlayerParty: String, @RequestAttribute observerParty: String): ResponseEntity<String> {
         return try {
-            val lines = partiesString.split('\n')
-            val wellKnownParty = proxy.wellKnownPartyFromX500Name(parse(lines[0]))!!
+            val wellKnownParty = proxy.wellKnownPartyFromX500Name(parse(otherPlayerParty))!!
 
             lateinit var signedTx: SignedTransaction
-            if (lines.size == 1) {
+            if (observerParty.length == 0) {
                 signedTx = proxy.startTrackedFlow(::StartGameFlow, wellKnownParty).returnValue.getOrThrow()
             }
             else {
-                val wellKnownObserver = proxy.wellKnownPartyFromX500Name(parse(lines[1]))!!
+                val wellKnownObserver = proxy.wellKnownPartyFromX500Name(parse(observerParty))!!
                 signedTx = proxy.startTrackedFlow(::StartGameFlowWithObserver, wellKnownParty, wellKnownObserver).returnValue.getOrThrow()
             }
 
