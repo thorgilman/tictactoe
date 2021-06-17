@@ -5,6 +5,7 @@
 # Corda Tic-Tac-Toe
 
 Welcome to the Tic-Tac-Toe CorDapp.
+Please visit the official R3 sample repo for a maintained version of this CorDapp: https://github.com/corda/samples-kotlin/tree/master/Accounts/tictacthor
 
 # Deploying Locally
 Navigate to the CorDapps root directory in a terminal window.
